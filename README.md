@@ -39,7 +39,7 @@ A PCB project is two artifacts pretending to be one.
 | Component | Role | Status |
 | --- | --- | --- |
 | **Manifest schema** | Canonical YAML schema (stackup, rules, net classes, placement, gates) | implemented |
-| **Rule engine contract** | Rule/Violation/FactBase types, four-source resolution order, evaluation model | spec drafted |
+| **Rule engine contract** | Rule/Violation/FactBase types, four-source resolution order, evaluation model | implemented |
 | **Standards rule library** | IPC-2152, IPC-2221, common fab DFM minimums as bundled data | planned |
 | **Schema validator** | `pcb-spec validate` — schema + internal consistency checks | planned |
 | **Conformance checker** | Walks netlist + manifest, runs schematic-phase gates | planned |
@@ -131,7 +131,7 @@ docs/
 
 ## Status
 
-Experimental. `manifest-schema` is implemented and tested. `rule-engine-contract` and `pcb-spec-skill` are drafted. Everything else is planned — see [`docs/specs-roadmap.md`](docs/specs-roadmap.md) for the build order and dependencies. Architecture: CLI + Claude Skill, no MCP.
+Experimental. `manifest-schema` and `rule-engine-contract` are implemented (34 tests, all passing). `pcb-spec-skill` is drafted. Everything else is planned — see [`docs/specs-roadmap.md`](docs/specs-roadmap.md) for the build order and dependencies. Architecture: CLI + Claude Skill, no MCP.
 
 ## Coding guidelines
 

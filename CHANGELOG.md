@@ -28,6 +28,9 @@ Guidelines:
 - `CLAUDE-implementation.md` architectural decision document: CLI + Skill (no MCP), final repo layout, CLI surface, skill structure, build order
 - `rule-engine-contract` spec drafted: Rule/Violation/FactBase types, four-source resolution order, evaluation model
 - `pcb-spec-skill` spec drafted: single spec replacing retired `llm-system-prompt`, `llm-authoring-assistant`, `llm-review-assistant`, `llm-drc-explainer`
+- Rule engine contract implementation in `src/pcb_spec/engine.py`: `RuleSource`, `Severity`, `ResolutionStep`, `RuleEntry`, `Violation` (with `stable_hash`), `FactBase`, `RuleRegistry`, `resolve_value`, `resolve_numeric_min`, `evaluate` (spec: rule-engine-contract)
+- `tests/test_engine.py` — 17 tests covering all unit and integration items in the spec's test_plan, all passing
+- `docs/adr/001-rule-engine-contract.md` — four architectural decisions: predicates-in-code, four-source resolution order, no constraint solving, stable violation hash
 
 ### Changed
 -
