@@ -2,7 +2,8 @@
 
 This is the development plan. Each entry will become an OpenSpec spec under
 `.openspec/specs/`. Specs are listed in dependency order. The first one
-(`manifest-schema`) is already drafted; the rest will be drafted next.
+(`manifest-schema`) is implemented; the second (`rule-engine-contract`) is
+drafted. The rest will be drafted as each phase begins.
 
 ---
 
@@ -10,16 +11,29 @@ This is the development plan. Each entry will become an OpenSpec spec under
 
 ### 1. `manifest-schema`
 
-**Status:** drafted (`.openspec/specs/manifest-schema.spec.yaml`)
+**Status:** implemented (`.openspec/specs/manifest-schema.spec.yaml`)
 **Dependencies:** none
 
 Define the canonical YAML schema for the constraint manifest. JSON Schema +
 Pydantic model. Examples for minimal, 4-layer mixed-signal, and controlled
 impedance boards.
 
+### 1.5. `rule-engine-contract`
+
+**Status:** drafted (`.openspec/specs/rule-engine-contract.spec.yaml`)
+**Dependencies:** `manifest-schema`
+
+Define the mechanical contract for the rule evaluation engine: what a Rule is
+(data + predicate, not declarative), what a Violation is (structured, stable
+ID, full resolution chain), what a FactBase is (manifest + netlist + calc
+results), and how values are resolved across four layers (IPC_SEED < FAB_DFM <
+NET_CLASS < MANIFEST). No predicate implementations — just the types and
+resolution logic. Every spec from `standards-rule-library` onward depends on
+this contract.
+
 ### 2. `standards-rule-library`
 
-**Dependencies:** `manifest-schema`
+**Dependencies:** `manifest-schema`, `rule-engine-contract`
 
 Bundle public standards data as versioned YAML files: IPC-2152 current
 capacity tables, IPC-2221 voltage spacing, common fab DFM minimums for
@@ -41,7 +55,7 @@ USB connectors, decoupling caps).
 
 ### 4. `schema-validator`
 
-**Dependencies:** `manifest-schema`
+**Dependencies:** `manifest-schema`, `rule-engine-contract`
 
 CLI: `pcb-spec validate <manifest.yaml>`. Validates against schema, checks
 internal consistency (every net class member exists, every impedance
@@ -78,7 +92,7 @@ via current capacity for sizing power delivery via stitching.
 
 ### 7. `kicad-netlist-parser`
 
-**Dependencies:** `manifest-schema`
+**Dependencies:** `manifest-schema`, `rule-engine-contract`
 
 Read KiCad `.net` files (S-expression format) into an internal graph
 representation: components, nets, pins, connections. KiCad first because
@@ -88,7 +102,7 @@ touching gate logic.
 
 ### 8. `conformance-checker`
 
-**Dependencies:** `manifest-schema`, `bom-library-format`, `kicad-netlist-parser`
+**Dependencies:** `manifest-schema`, `rule-engine-contract`, `bom-library-format`, `kicad-netlist-parser`
 
 CLI: `pcb-spec check <manifest.yaml> <netlist.net>`. Walks the netlist
 plus manifest, runs each schematic-phase gate, reports violations.
@@ -101,7 +115,7 @@ Each violation cites the gate ID from the manifest so it's traceable.
 
 ### 9. `kicad-rule-emitter`
 
-**Dependencies:** `manifest-schema`, `impedance-calculator`
+**Dependencies:** `manifest-schema`, `rule-engine-contract`, `impedance-calculator`
 
 CLI: `pcb-spec emit kicad <manifest.yaml> -o rules.kicad_dru`. Generates
 KiCad's native design rule syntax. Handles net classes, clearances,
@@ -191,14 +205,15 @@ article followup with real numbers.
 
 ## Suggested build order
 
-1. `manifest-schema` (foundation, blocks everything)
-2. `standards-rule-library` + `bom-library-format` (data, can run in parallel)
-3. `schema-validator` (one afternoon, unblocks LLM authoring path)
-4. `impedance-calculator` + `current-capacity-calculator` (parallel)
-5. `kicad-netlist-parser` → `conformance-checker`
-6. `kicad-rule-emitter`
-7. `llm-*` specs (lighter than they look once the engine underneath works)
-8. `reference-projects` + `experiment-metrics` in parallel from phase 4 onward
+1. `manifest-schema` ✓ implemented
+2. `rule-engine-contract` — types, resolution logic, ADR. One session. Unblocks everything.
+3. `standards-rule-library` + `bom-library-format` (data, parallel — now know the entry shape)
+4. `schema-validator` (one afternoon, unblocks LLM authoring path)
+5. `impedance-calculator` + `current-capacity-calculator` (parallel)
+6. `kicad-netlist-parser` → `conformance-checker`
+7. `kicad-rule-emitter`
+8. `llm-*` specs (lighter than they look once the engine underneath works)
+9. `reference-projects` + `experiment-metrics` in parallel from phase 5 onward
 
 The whole MVP is a few weekends of focused work. The experiment can start
 running as soon as phases 0-3 are in place.

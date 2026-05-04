@@ -64,14 +64,18 @@ cannot be implemented until its dependencies are merged.
 
 The order is:
 
-1. `manifest-schema` (foundation)
-2. `standards-rule-library` and `bom-library-format` (data, parallel)
-3. `schema-validator` (first runnable CLI)
-4. `impedance-calculator` and `current-capacity-calculator` (parallel)
-5. `kicad-netlist-parser` then `conformance-checker`
-6. `kicad-rule-emitter`
-7. `llm-*` specs
-8. `reference-projects` and `experiment-metrics`
+1. `manifest-schema` ✓ implemented
+2. `rule-engine-contract` — Rule, Violation, FactBase types + resolution logic.
+   Blocks everything from step 3 onward. Do not implement the conformance
+   checker, kicad-rule-emitter, or any LLM spec without this merged.
+3. `standards-rule-library` and `bom-library-format` (data, parallel — now
+   know the entry shape the engine expects)
+4. `schema-validator` (first runnable CLI)
+5. `impedance-calculator` and `current-capacity-calculator` (parallel)
+6. `kicad-netlist-parser` then `conformance-checker`
+7. `kicad-rule-emitter`
+8. `llm-*` specs
+9. `reference-projects` and `experiment-metrics`
 
 When the user asks for spec N, verify all dependencies are in `status:
 approved` (merged) before starting implementation. If a dependency is not
@@ -145,6 +149,9 @@ needed.
 src/pcb_spec/
   __init__.py         # version, public API surface
   cli.py              # argparse, dispatches to subcommands
+  engine.py           # Rule, RuleEntry, RuleSource, Severity, Violation,
+                      # ResolutionStep, FactBase, RuleRegistry,
+                      # resolve_value, resolve_numeric_min, evaluate
   schema/
     manifest.py       # Pydantic models
     manifest.schema.json
@@ -154,7 +161,8 @@ src/pcb_spec/
     rules.py          # internal consistency checks
   conformance/
     __init__.py       # check(manifest, netlist) -> ConformanceReport
-    gates.py          # one function per gate, named gate_<id>
+    gates.py          # one function per gate, named gate_<id>; every predicate
+                      # has signature (FactBase) -> list[Violation]
     netlist/
       kicad.py        # parse_kicad_netlist(path) -> Netlist
   emit/
@@ -204,7 +212,9 @@ tests/
 docs/
   specs-roadmap.md
   manifest-schema.md  # auto-generated
+  rule-engine.md      # auto-generated from engine.py docstrings
   adr/
+    001-rule-engine-contract.md  # why predicates-in-code, four-source resolution
 ```
 
 When a spec's deliverables list a file path, that path is authoritative.
@@ -229,6 +239,15 @@ citations fail review.
 a tolerance band (e.g., `Impedance(target=50, lower=45, upper=55)`).
 Single-point returns hide the engineering reality. The schema's
 `tolerance_pct` fields exist for the same reason.
+
+**Rule vs. calculator.** A calculator computes a required numeric value from
+physical inputs (e.g., `ipc_2152_width(current=2.0, copper_oz=1, layer="external")
+→ 42 mil`). A rule checks that the design meets the requirement (e.g.,
+`actual_width >= required_width`). A rule predicate may call a calculator
+internally; the calculator result becomes a fact in the FactBase. The line is:
+calculators produce numbers, rules produce violations. Never conflate them. A
+rule that hardcodes a number it should have gotten from a calculator is the same
+class of error this project is trying to prevent in LLM-generated designs.
 
 ---
 

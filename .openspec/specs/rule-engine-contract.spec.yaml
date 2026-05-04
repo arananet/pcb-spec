@@ -1,0 +1,113 @@
+title: "Rule Engine Contract v0.1"
+description: |
+  Define the mechanical contract for pcb-spec's rule evaluation engine.
+  This is not the implementation of a specific checker; it is the shared
+  contract that every checker, emitter, and LLM integration depends on.
+
+  The manifest schema (spec 1) defines the shape of data. This spec defines
+  what happens when that data is evaluated: what a Rule is, what a Fact is,
+  what a Violation is, how values are resolved across layers, and what the
+  evaluation model is.
+
+  Without this contract, the conformance-checker, kicad-rule-emitter, and
+  LLM review assistant each invent their own violation shape, rule lookup
+  logic, and override semantics. The experiment cannot produce reproducible
+  numbers if each phase outputs violations in a different structure.
+
+  Scope: data structures and resolution logic only. No gate predicate
+  implementations (those are in conformance-checker). No EDA output
+  (that is in kicad-rule-emitter). No numeric tables (those are in
+  standards-rule-library). This spec is pure contract: types, resolution
+  order, and the evaluation loop stub.
+
+status: review
+
+owner: arananet
+team: pcb-spec
+implementation_skill: backend-pro
+
+acceptance_criteria:
+  - "RuleEntry dataclass defined in src/pcb_spec/engine.py with fields: id (str), source (RuleSource enum), severity (Severity enum), citation (str), params (dict). No predicate field — predicates live in code, params live in data."
+  - "Violation dataclass defined with fields: rule_id (str), gate_id (str | None), severity (Severity), message (str), net_name (str | None), component_id (str | None), expected (str), actual (str), citation (str), remediation (str), resolution_chain (list[ResolutionStep])."
+  - "ResolutionStep dataclass defined with fields: source (RuleSource), value (str), citation (str). The resolution_chain field on Violation records every layer that contributed a candidate value, in resolution order, so the winning source is traceable."
+  - "RuleSource enum has exactly four members: IPC_SEED, FAB_DFM, NET_CLASS, MANIFEST. Resolution order from least to most specific: IPC_SEED < FAB_DFM < NET_CLASS < MANIFEST."
+  - "resolve_value(candidates: list[tuple[RuleSource, str, str]]) -> tuple[str, list[ResolutionStep]] takes a list of (source, value, citation) tuples and returns the winning value and the full resolution chain. Most-specific-wins: MANIFEST beats NET_CLASS beats FAB_DFM beats IPC_SEED."
+  - "resolve_numeric_min(candidates) applies most-specific-wins and additionally enforces that a FAB_DFM or higher-specificity source cannot be underridden by a lower-specificity source, even if the lower-specificity value is numerically larger. The fab floor is a hard lower bound, not a suggested minimum."
+  - "FactBase dataclass defined with fields: manifest (Manifest), netlist (Any — typed as Any until kicad-netlist-parser is implemented), calc_results (dict[str, Any]). FactBase is the read-only input to every predicate function."
+  - "Severity enum has members: ERROR (blocks sign-off), WARNING (advisory). A gate in the manifest with no explicit severity defaults to ERROR."
+  - "RuleRegistry is a dict[str, Callable[[FactBase], list[Violation]]]. evaluate(registry, fact_base) iterates the registry, collects all violations, and returns them sorted by severity then rule_id. No short-circuit on first failure."
+  - "src/pcb_spec/engine.py exports all public names via __all__ so downstream modules import from a single location."
+  - "docs/adr/001-rule-engine-contract.md records the architectural decisions: why predicates-in-code vs declarative-in-YAML, why four-source resolution order, why no constraint solving for v0.1."
+
+test_plan:
+  unit_tests:
+    - "resolve_value returns MANIFEST value when both MANIFEST and IPC_SEED candidates are present."
+    - "resolve_value returns FAB_DFM value when only FAB_DFM and IPC_SEED candidates are present."
+    - "resolve_value returns IPC_SEED value when it is the only candidate."
+    - "resolve_value raises ValueError when candidates list is empty."
+    - "resolve_value populates resolution_chain with all candidate sources in resolution order, not just the winner."
+    - "resolve_numeric_min: FAB_DFM value wins over IPC_SEED even when IPC_SEED numeric value is larger, because specificity beats magnitude."
+    - "resolve_numeric_min: MANIFEST value wins over FAB_DFM when both are present, and the resolution_chain records both."
+    - "evaluate: calls every registered predicate and aggregates violations across all of them."
+    - "evaluate: returns violations sorted ERROR-first, then by rule_id lexicographically."
+    - "evaluate: an empty registry returns an empty list, not an error."
+    - "Violation stable_hash property: two Violation objects with identical (rule_id, gate_id, net_name, component_id) produce the same hash regardless of message text."
+
+  integration_tests:
+    - "FactBase can be constructed from any of the three example manifests with netlist=None and calc_results={}."
+    - "A minimal predicate registered in RuleRegistry via evaluate produces a Violation with the expected structure and a populated resolution_chain."
+    - "A resolution_chain on a Violation that used a MANIFEST override over IPC_SEED contains exactly two ResolutionStep entries: one IPC_SEED, one MANIFEST."
+
+  out_of_scope_for_this_spec:
+    - "Actual gate predicate implementations (those are in conformance-checker spec)"
+    - "Netlist parsing and typed FactBase.netlist (those are in kicad-netlist-parser spec)"
+    - "IPC or fab numeric table data (those are in standards-rule-library spec)"
+    - "KiCad rule file emission (that is in kicad-rule-emitter spec)"
+    - "LLM violation formatting (that is in llm-drc-explainer spec)"
+
+dependencies:
+  - manifest-schema
+
+deliverables:
+  - "src/pcb_spec/engine.py (RuleEntry, RuleSource, Severity, Violation, ResolutionStep, FactBase, RuleRegistry, resolve_value, resolve_numeric_min, evaluate)"
+  - "tests/test_engine.py"
+  - "docs/adr/001-rule-engine-contract.md"
+
+notes: |
+  Core design decisions, settled here so downstream specs do not relitigate them:
+
+  WHY predicates-in-code, not declarative-in-YAML:
+    A declarative rule language (e.g. "width >= ipc_2152_min(current, copper_oz)")
+    requires a parser, an expression evaluator, and a variable binding model.
+    That is a language runtime. For v0.1, the predicate is a Python function.
+    The function is tested directly. If a check needs to be exposed to an LLM,
+    the LLM gets the docstring and the violation message, not the source.
+    YAML entries in data/ are lookup tables, not executable logic.
+
+  WHY four-source resolution order (IPC_SEED < FAB_DFM < NET_CLASS < MANIFEST):
+    IPC_SEED: general standard, applies in the absence of anything more specific.
+    FAB_DFM: physical fab constraint. Cannot be violated regardless of design intent.
+    NET_CLASS: user's routing intent for a group of nets. More specific than fab DFM
+               for design-intent values (e.g. a power net width larger than the DFM
+               floor), but the fab floor remains a hard lower bound.
+    MANIFEST: explicit per-project override. Highest specificity.
+    Note: FAB_DFM is not a "soft minimum" that NET_CLASS can underride. A net class
+    rule that sets min_width_mil below the fab DFM floor is a manifest authoring
+    error, not a legal override. resolve_numeric_min enforces this.
+
+  WHY no constraint solving:
+    A constraint solver (e.g. Z3, OR-Tools) would allow the engine to find the
+    minimum set of layout changes that satisfies all rules simultaneously. That is
+    valuable but out of scope for v0.1. The engine in v0.1 is a reporter: it finds
+    and describes violations, it does not solve them. This is the right scope for
+    a first experiment — get the violation set right before optimising the fix.
+
+  WHY stable_hash on Violation:
+    Running pcb-spec check twice on the same board must produce the same violation
+    IDs, so diffs are meaningful ("new violations since last run: 2"). The hash is
+    over (rule_id, gate_id, net_name, component_id), not over the message text,
+    so message improvements do not create spurious diffs.
+
+  The FactBase.netlist field is typed Any in this spec because the netlist parser
+  is not yet implemented. The conformance-checker spec will tighten this to Netlist
+  once the parser exists. Do not widen it further here.
