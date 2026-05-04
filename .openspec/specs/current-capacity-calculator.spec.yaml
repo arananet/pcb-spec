@@ -1,0 +1,81 @@
+title: "Current Capacity Calculator v0.1"
+description: |
+  Implement `src/pcb_spec/calc/current_capacity.py` — a pure-Python calculator
+  for minimum PCB trace width given a target current, temperature rise, and
+  copper weight, using the IPC-2221B polynomial (the public fallback from
+  data/ipc/ipc-2152.yaml).
+
+  Formula (IPC-2221B §6.2):
+    I = k * ΔT^0.44 * A^0.725
+  where I = current (A), ΔT = temperature rise above ambient (°C),
+  A = cross-sectional area (mil²), k = 0.048 (external) or 0.024 (internal).
+
+  Inverting for minimum area, then converting to width:
+    A = (I / (k * ΔT^0.44))^(1/0.725)
+    width_mil = A / thickness_mil
+    thickness_mil = copper_oz * 1.378  (1 oz copper = 1.378 mil = 35 µm)
+    width_mm = width_mil * 0.0254
+
+  The calculator reads k, b, c from data/ipc/ipc-2152.yaml (ipc_2221_fallback)
+  so coefficients are not hardcoded — the data file is the source of truth.
+
+  The calculator is used by:
+    - The CLI: `pcb-spec calc current-capacity ...`
+    - The conformance checker (future spec) to verify trace widths in net classes
+    - The Claude Skill for manifest authoring guidance
+
+status: review
+
+owner: arananet
+team: pcb-spec
+implementation_skill: null
+
+acceptance_criteria:
+  - "`src/pcb_spec/calc/current_capacity.py` exports `min_trace_width_mm(current_a, delta_t_c, copper_oz, layer) -> float`. `layer` is Literal['external','internal']. Returns minimum trace width in mm."
+  - "The function reads k, b, c coefficients from `data/ipc/ipc-2152.yaml` (ipc_2221_fallback section). Coefficients are not hardcoded — changing the YAML changes the output."
+  - "For current_a=1.0, delta_t_c=10, copper_oz=1.0, layer='external': result is within ±0.05 mm of 0.254 mm (10 mil), matching the IPC-2221 reference table in ipc-2152.yaml."
+  - "For current_a=2.0, delta_t_c=10, copper_oz=1.0, layer='external': result is within ±0.15 mm of 0.762 mm (30 mil)."
+  - "The function raises `ValueError` for non-positive current_a, delta_t_c, or copper_oz."
+  - "The CLI subcommand `pcb-spec calc current-capacity` accepts `--current <A>`, `--delta-t <°C>`, `--copper-oz <float>`, `--layer external|internal` and prints `min_width = <value> mm` to stdout. Added under the `calc` subparser in cli.py."
+
+test_plan:
+  unit_tests:
+    - "min_trace_width_mm(1.0, 10, 1.0, 'external') is within ±0.05 mm of 0.254 mm."
+    - "min_trace_width_mm(2.0, 10, 1.0, 'external') is within ±0.15 mm of 0.762 mm."
+    - "min_trace_width_mm(1.0, 10, 1.0, 'internal') > min_trace_width_mm(1.0, 10, 1.0, 'external') — internal traces must be wider (lower k)."
+    - "min_trace_width_mm(2.0, 10, 2.0, 'external') < min_trace_width_mm(2.0, 10, 1.0, 'external') — heavier copper allows narrower trace."
+    - "min_trace_width_mm raises ValueError for current_a <= 0."
+    - "min_trace_width_mm raises ValueError for delta_t_c <= 0."
+    - "min_trace_width_mm raises ValueError for copper_oz <= 0."
+    - "Return value is a positive float."
+
+  integration_tests:
+    - "CLI `pcb-spec calc current-capacity --current 1.0 --delta-t 10 --copper-oz 1.0 --layer external` exits 0 and stdout contains 'min_width ='."
+    - "CLI with missing required argument exits non-zero."
+
+  out_of_scope_for_this_spec:
+    - "IPC-2152 correction factors (board thickness, plane proximity) — ipc_2152_available is false"
+    - "Via current capacity"
+    - "Integration with conformance checker"
+
+dependencies:
+  - manifest-schema
+  - standards-rule-library
+
+deliverables:
+  - "src/pcb_spec/calc/current_capacity.py"
+  - "tests/test_current_capacity.py"
+
+notes: |
+  Reference cross-check (from approximate table in ipc-2152.yaml, labeled approx.):
+    1.0 A external 1oz → ~10 mil (0.254 mm) ✓
+    2.0 A external 1oz → ~30 mil (0.762 mm) ✓
+    1.0 A internal 1oz → ~20 mil (0.508 mm)
+
+  Copper thickness conversion: 1 oz = 35 µm = 1.378 mil.
+  This is a standard constant, not from data/ipc/ipc-2152.yaml — document it
+  as a module-level constant with its source.
+
+  The data file path for ipc-2152.yaml must be resolved relative to this package
+  using importlib.resources or __file__, not a hardcoded absolute path, so it
+  works after `pip install`.

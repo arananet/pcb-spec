@@ -44,7 +44,7 @@ A PCB project is two artifacts pretending to be one.
 | **Schema validator** | `pcb-spec validate` — schema + internal consistency checks | implemented |
 | **Conformance checker** | Walks netlist + manifest, runs schematic-phase gates | planned |
 | **EDA rule translator** | Emits native syntax (KiCad `.kicad_dru` first) | planned |
-| **Calculator tools** | Wadell impedance, IPC-2152 current capacity, via thermal | planned |
+| **Calculator tools** | Wadell impedance, IPC-2221B current capacity | implemented |
 | **Claude Skill** | `.claude/skills/pcb-spec/` — teaches Claude to operate the toolchain; replaces llm-* specs | planned |
 | **Reference projects** | Real boards from the author's bench, used as test fixtures | planned |
 
@@ -131,7 +131,7 @@ docs/
 
 ## Status
 
-Experimental. `manifest-schema`, `rule-engine-contract`, `standards-rule-library`, `bom-library-format`, and `schema-validator` are implemented (77 tests, all passing). `pcb-spec-skill` is drafted. Everything else is planned — see [`docs/specs-roadmap.md`](docs/specs-roadmap.md) for the build order and dependencies. Architecture: CLI + Claude Skill, no MCP.
+Experimental. `manifest-schema`, `rule-engine-contract`, `standards-rule-library`, `bom-library-format`, `schema-validator`, `impedance-calculator`, and `current-capacity-calculator` are implemented (104 tests, all passing). `pcb-spec-skill` is drafted. Everything else is planned — see [`docs/specs-roadmap.md`](docs/specs-roadmap.md) for the build order and dependencies. Architecture: CLI + Claude Skill, no MCP.
 
 ### Reference sources
 
