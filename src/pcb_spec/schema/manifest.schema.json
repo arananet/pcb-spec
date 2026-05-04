@@ -1,0 +1,292 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/arananet/pcb-spec/blob/main/src/pcb_spec/schema/manifest.schema.json",
+  "title": "PCB-Spec Manifest",
+  "description": "Constraint manifest for a PCB project. The single source of truth for stackup, rules, net classes, placement intent, and conformance gates.",
+  "type": "object",
+  "required": ["manifest_version", "project", "stackup", "rules", "net_classes", "gates"],
+  "additionalProperties": false,
+  "properties": {
+    "manifest_version": {
+      "description": "Schema version. Only '0.1' is supported in this release.",
+      "type": "string",
+      "enum": ["0.1"]
+    },
+    "project": {
+      "description": "Project identity: name and revision string.",
+      "type": "object",
+      "required": ["name", "revision"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "description": "Short project name, URL-safe.",
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "description": "Revision identifier, e.g. 'r1' or 'v2.1'.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "stackup": {
+      "description": "Physical layer stackup. Dielectric parameters are referenced by fab stackup ID, not inlined.",
+      "type": "object",
+      "required": ["fab_house_id", "stackup_id", "layers"],
+      "additionalProperties": false,
+      "properties": {
+        "fab_house_id": {
+          "description": "Opaque fab house identifier, e.g. 'jlcpcb'. The validator does not check this against a known-fab library; that belongs to a separate spec.",
+          "type": "string",
+          "minLength": 1
+        },
+        "stackup_id": {
+          "description": "Fab-specific stackup ID that encodes dielectric, prepreg, and core thicknesses. References the fab's capability sheet.",
+          "type": "string",
+          "minLength": 1
+        },
+        "layers": {
+          "description": "Ordered list of copper layers. No duplicate layer numbers allowed.",
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "required": ["number", "name", "type", "copper_oz"],
+            "additionalProperties": false,
+            "properties": {
+              "number": {
+                "description": "Layer number, 1-indexed from top.",
+                "type": "integer",
+                "minimum": 1
+              },
+              "name": {
+                "description": "EDA layer name, e.g. 'F.Cu', 'In1.Cu', 'B.Cu'.",
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "description": "Layer function: signal carries routed traces; plane is a solid copper pour; mixed combines both.",
+                "type": "string",
+                "enum": ["signal", "plane", "mixed"]
+              },
+              "copper_oz": {
+                "description": "Copper weight in oz/ft². Common values: 0.5, 1, 2.",
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "rules": {
+      "description": "Rule tables for current capacity, spacing, fab DFM, and impedance. Each subsection requires a citation. Numeric values are populated by the standards-rule-library spec.",
+      "type": "object",
+      "required": ["current_capacity", "spacing", "fab_dfm", "impedance"],
+      "additionalProperties": false,
+      "properties": {
+        "current_capacity": {
+          "description": "Current-carrying capacity rules. Values sourced from IPC-2152.",
+          "$ref": "#/$defs/rule_section"
+        },
+        "spacing": {
+          "description": "Clearance and creepage spacing rules. Values sourced from IPC-2221.",
+          "$ref": "#/$defs/rule_section"
+        },
+        "fab_dfm": {
+          "description": "Fab-specific DFM minimums: trace width, annular ring, drill size, etc.",
+          "$ref": "#/$defs/rule_section"
+        },
+        "impedance": {
+          "description": "Impedance constraint rules and named profiles for controlled-impedance nets.",
+          "type": "object",
+          "required": ["citation"],
+          "additionalProperties": false,
+          "properties": {
+            "citation": {
+              "description": "Source standard or reference for impedance rules, e.g. 'IPC-2141A'.",
+              "type": "string",
+              "minLength": 1
+            },
+            "profiles": {
+              "description": "Named impedance profiles referenced by net classes.",
+              "type": "array",
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/impedance_profile"
+              }
+            }
+          }
+        }
+      }
+    },
+    "net_classes": {
+      "description": "Named groups of nets sharing routing constraints. Keys use UPPER_SNAKE_CASE.",
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[A-Z][A-Z0-9_]*$": {
+          "$ref": "#/$defs/net_class"
+        }
+      }
+    },
+    "placement": {
+      "description": "Component placement intents. Optional. Each entry records where or how a component should be placed relative to nets or other components.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/placement_constraint"
+      }
+    },
+    "gates": {
+      "description": "Conformance gates grouped by phase. Each gate has a stable ID used in violation reports.",
+      "type": "object",
+      "required": ["schematic", "layout", "dfm"],
+      "additionalProperties": false,
+      "properties": {
+        "schematic": {
+          "description": "Schematic-phase gates: logical correctness, pin assignment, decoupling.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/gate" }
+        },
+        "layout": {
+          "description": "Layout-phase gates: trace geometry, impedance, return paths.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/gate" }
+        },
+        "dfm": {
+          "description": "DFM-phase gates: fab capability minimums, courtyard clearances.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/gate" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "rule_section": {
+      "description": "A rule subsection with a mandatory citation and a list of structured entries.",
+      "type": "object",
+      "required": ["citation"],
+      "additionalProperties": false,
+      "properties": {
+        "citation": {
+          "description": "Source standard or document for these rules, e.g. 'IPC-2152, Table 5-1'.",
+          "type": "string",
+          "minLength": 1
+        },
+        "entries": {
+          "description": "Structured rule entries. Shape defined by the standards-rule-library spec.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "impedance_profile": {
+      "description": "A named impedance target for controlled-impedance routing.",
+      "type": "object",
+      "required": ["id", "target_ohm", "tolerance_pct"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Stable identifier referenced by net class rules.",
+          "type": "string",
+          "minLength": 1
+        },
+        "target_ohm": {
+          "description": "Target impedance in ohms.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "tolerance_pct": {
+          "description": "Allowed deviation from target, as a percentage (e.g. 10 means ±10%).",
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+    "net_class": {
+      "description": "A group of nets sharing routing rules and constraints.",
+      "type": "object",
+      "required": ["description", "members", "rules"],
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "description": "Human-readable description of what nets belong to this class.",
+          "type": "string",
+          "minLength": 1
+        },
+        "members": {
+          "description": "List of net names belonging to this class.",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "rules": {
+          "description": "Routing rules applied to all nets in this class.",
+          "type": "object",
+          "required": ["min_width_mil", "route_layers"],
+          "additionalProperties": false,
+          "properties": {
+            "min_width_mil": {
+              "description": "Minimum trace width in mils.",
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "route_layers": {
+              "description": "Layer names on which nets in this class are permitted to route.",
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string" }
+            },
+            "impedance_profile": {
+              "description": "ID of an impedance profile in rules.impedance.profiles. Cross-reference validated by the Pydantic loader.",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "placement_constraint": {
+      "description": "Placement intent for a single component.",
+      "type": "object",
+      "required": ["component_id"],
+      "additionalProperties": false,
+      "properties": {
+        "component_id": {
+          "description": "Component reference designator, e.g. 'U1'. Must resolve to a component in the BOM library (checked by the conformance-checker spec).",
+          "type": "string",
+          "minLength": 1
+        },
+        "net_class": {
+          "description": "Net class this component is associated with. Must resolve to a defined net class. Cross-reference validated by the Pydantic loader.",
+          "type": "string"
+        },
+        "notes": {
+          "description": "Free-form placement notes for the layout engineer.",
+          "type": "string"
+        }
+      }
+    },
+    "gate": {
+      "description": "A single conformance gate with a stable ID and a free-form rule string.",
+      "type": "object",
+      "required": ["id", "rule"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Stable gate ID used in violation reports, e.g. 'SCH-001'. Never reuse or reorder IDs.",
+          "type": "string",
+          "minLength": 1
+        },
+        "rule": {
+          "description": "Human-readable rule statement. The conformance-checker spec implements the check logic.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

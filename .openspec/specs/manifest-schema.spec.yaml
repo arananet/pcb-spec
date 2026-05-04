@@ -1,0 +1,91 @@
+title: "Manifest Schema v0.1"
+description: |
+  Define the canonical YAML schema for the pcb-spec constraint manifest.
+  The manifest is the single source of truth for a PCB project: stackup,
+  rule tables, net classes, placement intent, and conformance gates.
+  Every other component in the system reads from this schema. This spec
+  formalizes the schema as a JSON Schema document plus a Pydantic model,
+  so manifests can be machine-validated and round-tripped through Python.
+
+  This is the foundational spec. All subsequent specs (validator,
+  conformance checker, rule translator, calculators, LLM integration)
+  depend on the schema being stable and versioned.
+
+status: approved
+
+owner: arananet
+team: pcb-spec
+implementation_skill: backend-pro
+
+acceptance_criteria:
+  - "JSON Schema document at src/pcb_spec/schema/manifest.schema.json defines all five top-level sections: stackup, rules, net_classes, placement, gates."
+  - "Pydantic model at src/pcb_spec/schema/manifest.py mirrors the JSON Schema and round-trips YAML manifests without data loss."
+  - "Schema includes manifest_version field; loader rejects manifests with unsupported version strings."
+  - "Stackup section requires a fab_house_id and layers list with copper weight, type (signal/plane/mixed), and layer name; dielectric values are referenced by fab stackup ID, never inline."
+  - "Rules section has subsections for current_capacity, spacing, fab_dfm, and impedance, each with a citation field that is non-empty and a table of structured entries."
+  - "Net classes section requires every class to have description, members (list of net names), and rules (with required min_width_mil and route_layers fields at minimum)."
+  - "Every net class member referenced in placement constraints must resolve to a defined net class."
+  - "Every impedance_profile referenced by a net class must be defined in rules.impedance.profiles."
+  - "Gates section accepts free-form rule strings grouped by phase (schematic, layout, dfm); each gate has a stable ID for traceability in violation reports."
+  - "Schema documentation is auto-generated from JSON Schema descriptions to docs/manifest-schema.md."
+  - "At least three example manifests in examples/ validate cleanly: one minimal 2-layer board, one 4-layer mixed-signal, one with controlled impedance."
+
+test_plan:
+  unit_tests:
+    - "Pydantic model rejects manifest with missing required field (manifest_version, project, stackup, rules, net_classes, gates)."
+    - "Pydantic model rejects manifest_version values outside supported list."
+    - "Stackup loader rejects layers list with duplicate layer numbers."
+    - "Net class loader rejects member referencing impedance_profile not in rules.impedance.profiles."
+    - "Placement loader rejects component reference where component_id is not present in BOM library."
+    - "Gate loader rejects gate without stable id field."
+    - "YAML round-trip: load example manifest, dump to YAML, reload, assert deep equality."
+
+  integration_tests:
+    - "All three example manifests in examples/ pass schema validation."
+    - "Schema documentation generation runs without error and produces docs/manifest-schema.md with one section per top-level field."
+    - "JSON Schema validates the same examples as the Pydantic model (no divergence between the two definitions)."
+
+  fixtures:
+    - "examples/minimal-2layer/manifest.yaml — smallest possible valid manifest"
+    - "examples/4layer-mixed-signal/manifest.yaml — realistic hobby board"
+    - "examples/controlled-impedance/manifest.yaml — exercises impedance profiles"
+    - "tests/fixtures/invalid/*.yaml — broken manifests, one per failure class"
+
+  out_of_scope_for_this_spec:
+    - "Semantic conformance checks (covered by conformance-checker spec)"
+    - "EDA-tool rule translation (covered by kicad-emitter spec)"
+    - "LLM-driven manifest authoring (covered by llm-authoring-assistant spec)"
+
+dependencies: []
+
+deliverables:
+  - "src/pcb_spec/schema/manifest.schema.json"
+  - "src/pcb_spec/schema/manifest.py (Pydantic models)"
+  - "src/pcb_spec/schema/__init__.py (load_manifest, dump_manifest helpers)"
+  - "examples/minimal-2layer/manifest.yaml"
+  - "examples/4layer-mixed-signal/manifest.yaml"
+  - "examples/controlled-impedance/manifest.yaml"
+  - "docs/manifest-schema.md (auto-generated)"
+  - "tests/test_schema.py"
+
+implementation_notes: |
+  Implemented on branch claude/init-repo-setup-ubt15. All 17 tests pass.
+  JSON Schema (Draft 2020-12) and Pydantic model agree on all three examples.
+  Numeric values in examples are either cited DFM floors or marked TODO for
+  downstream specs (impedance-calculator, current-capacity-calculator).
+
+notes: |
+  Design constraints worth flagging for the implementer:
+
+  - The schema must be conservative. It is easier to add fields later than
+    to remove them. Start with the five sections, no more.
+  - Citation strings (e.g., "IPC-2152, Fig. 5-1") are free-form text but
+    required and non-empty. Future versions may formalize this into a
+    structured citation object.
+  - Net class names use uppercase snake case by convention (POWER_HIGH_CURRENT).
+    The schema enforces a regex but no semantic meaning.
+  - The fab_house_id field is opaque. The validator does not check that
+    it matches a known fab; that is the job of a separate fab-library spec.
+  - Do not encode IPC numeric values inside the schema. They live in the
+    bundled rule library (separate spec). The schema only defines the
+    shape of where those values go.

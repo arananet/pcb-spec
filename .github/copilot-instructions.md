@@ -1,4 +1,4 @@
-# Copilot Instructions — {{PROJECT_NAME}}
+# Copilot Instructions — pcb-spec
 
 This project uses **OpenSpec** for spec-driven development.
 

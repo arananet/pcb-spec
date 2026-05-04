@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `{{PROJECT_NAME}}` will be documented in this file.
+All notable changes to `pcb-spec` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -19,7 +19,11 @@ Guidelines:
 ## [Unreleased]
 
 ### Added
--
+- Manifest schema v0.1: JSON Schema + Pydantic models for all five sections (stackup, rules, net_classes, placement, gates) (spec: manifest-schema)
+- `load_manifest` / `dump_manifest` helpers in `src/pcb_spec/schema/__init__.py`
+- Auto-generated schema reference at `docs/manifest-schema.md`
+- Three validated example manifests: `minimal-2layer`, `4layer-mixed-signal`, `controlled-impedance`
+- Full test suite in `tests/test_schema.py` (17 tests, all passing)
 
 ### Changed
 -
@@ -43,5 +47,5 @@ Guidelines:
 ### Added
 - Initial release.
 
-[Unreleased]: https://github.com/{{GITHUB_OWNER}}/{{PROJECT_NAME}}/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/{{GITHUB_OWNER}}/{{PROJECT_NAME}}/releases/tag/v0.1.0
+[Unreleased]: https://github.com/arananet/pcb-spec/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/arananet/pcb-spec/releases/tag/v0.1.0
