@@ -36,16 +36,32 @@ A PCB project is two artifacts pretending to be one.
 
 ## What's in the box
 
-| Component | Role |
-| --- | --- |
-| **Manifest schema** | Canonical YAML schema (stackup, rules, net classes, placement, gates) |
-| **Standards rule library** | IPC-2152, IPC-2221, common fab DFM minimums as bundled data |
-| **Schema validator** | `pcb-spec validate` — schema + internal consistency checks |
-| **Conformance checker** | Walks netlist + manifest, runs schematic-phase gates |
-| **EDA rule translator** | Emits native syntax (KiCad `.kicad_dru` first) |
-| **Calculator tools** | Wadell impedance, IPC-2152 current capacity, via thermal — wired up as LLM tools |
-| **LLM integration** | Authoring assistant, review assistant, DRC explainer |
-| **Reference projects** | Real boards from the author's bench, used as test fixtures |
+| Component | Role | Status |
+| --- | --- | --- |
+| **Manifest schema** | Canonical YAML schema (stackup, rules, net classes, placement, gates) | implemented |
+| **Rule engine contract** | Rule/Violation/FactBase types, four-source resolution order, evaluation model | spec drafted |
+| **Standards rule library** | IPC-2152, IPC-2221, common fab DFM minimums as bundled data | planned |
+| **Schema validator** | `pcb-spec validate` — schema + internal consistency checks | planned |
+| **Conformance checker** | Walks netlist + manifest, runs schematic-phase gates | planned |
+| **EDA rule translator** | Emits native syntax (KiCad `.kicad_dru` first) | planned |
+| **Calculator tools** | Wadell impedance, IPC-2152 current capacity, via thermal | planned |
+| **LLM integration** | Authoring assistant, review assistant, DRC explainer | planned |
+| **Reference projects** | Real boards from the author's bench, used as test fixtures | planned |
+
+## Getting started
+
+```bash
+git clone https://github.com/arananet/pcb-spec.git
+cd pcb-spec
+pip install -e ".[dev]"
+bash setup.sh          # install OpenSpec git hooks
+
+# validate one of the example manifests
+python3 -m pcb_spec.schema examples/minimal-2layer/manifest.yaml
+
+# run the test suite
+python3 -m pytest
+```
 
 ## What is OpenSpec?
 
@@ -58,26 +74,29 @@ See `.openspec/specs/` for active specs. The roadmap of planned specs lives in [
 ```
 .openspec/specs/        # Active spec files (one per feature)
 src/pcb_spec/           # Python package
-  schema/               # Manifest schema definition
-  validator/            # Schema validator
+  engine.py             # Rule engine contract: types, resolution, evaluation loop
+  schema/               # Manifest schema (JSON Schema + Pydantic)
+  validator/            # Schema validator CLI
   conformance/          # Netlist parser + gate runner
-  emit/                 # EDA rule translators (kicad/, altium/, allegro/)
+  emit/                 # EDA rule translators (kicad/ first)
   calc/                 # Impedance, current capacity, via thermal calculators
   llm/                  # Authoring/review/explain assistants
 data/                   # Bundled rule libraries (IPC, fab DFM)
-examples/               # Reference projects with manifests
+examples/               # Reference manifests (minimal-2layer, 4layer-mixed-signal,
+                        #   controlled-impedance)
 docs/
   adr/                  # Architecture decisions
-  specs-roadmap.md      # Planned specs and dependencies
+  specs-roadmap.md      # Full spec dependency graph and build order
+  manifest-schema.md    # Auto-generated schema reference
 ```
 
 ## Status
 
-Experimental. The schema is at v0.1. The first reference project is in progress. Article and experiment writeup pending real fab results.
+Experimental. `manifest-schema` is implemented and tested. `rule-engine-contract` is drafted. Everything else is planned — see [`docs/specs-roadmap.md`](docs/specs-roadmap.md) for the build order and dependencies.
 
 ## Coding guidelines
 
-Karpathy-inspired principles enforced through OpenSpec: think before coding, simplicity first, surgical changes, goal-driven execution. See `CLAUDE.md`.
+Karpathy-inspired principles enforced through OpenSpec: think before coding, simplicity first, surgical changes, goal-driven execution. See `CLAUDE.md` and `CLAUDE-pcbspec.md`.
 
 ## License
 
