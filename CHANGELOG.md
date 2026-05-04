@@ -34,6 +34,8 @@ Guidelines:
 - Standards rule library (spec: standards-rule-library): `data/ipc/ipc-2221.yaml` (IPC-2221B Table 6-1 voltage clearance, B1–B9), `data/ipc/ipc-2152.yaml` (IPC-2152 model parameters, IPC-2221 fallback polynomial), `data/fab/jlcpcb.yaml` + `pcbway.yaml` + `oshpark.yaml` (capability matrix structure; JLCPCB values require manual verification at https://jlcpcb.com/capabilities/pcb-capabilities and https://jlcpcb.com/blog/pcb-design-rules-best-practices)
 - BOM component library (spec: bom-library-format): `data/bom/library.yaml` — 19 seed entries (linear regulators, LDO, NPN transistor, Schottky diode, USB connectors, MCUs, crystals, ferrite beads, passive package families) all with manufacturer datasheet citations
 - `tests/test_standards.py` (19 tests) and `tests/test_bom_library.py` (9 tests), all passing
+- KiCad rule emitter (spec: kicad-rule-emitter): `src/pcb_spec/emit/kicad.py` — `emit_dru()` generates `.kicad_dru` with one `track-width` rule per net class; impedance profile comment for controlled-impedance classes; CLI `pcb-spec emit kicad <manifest> [-o <path>]`
+- `tests/test_kicad_emitter.py` (10 tests), all passing
 - KiCad netlist parser (spec: kicad-netlist-parser): `src/pcb_spec/conformance/netlist_parser.py` — minimal sexp tokenizer + parser; `Netlist`/`Component`/`Net`/`NetNode` dataclasses; `component_refs()` and `net_names()` helpers
 - Conformance checker (spec: conformance-checker): `src/pcb_spec/conformance/gates.py` — `run_schematic_gates()` with NET_CLASS_MEMBER_NOT_IN_NETLIST and PLACEMENT_COMPONENT_NOT_IN_NETLIST predicates; CLI `pcb-spec check <manifest> <netlist> [--report]`
 - `tests/test_netlist_parser.py` (10 tests) and `tests/test_conformance.py` (10 tests), all passing

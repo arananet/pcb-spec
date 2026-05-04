@@ -1,0 +1,77 @@
+title: "KiCad Rule Emitter v0.1"
+description: |
+  Implement `src/pcb_spec/emit/kicad.py` — translate the manifest's net class
+  rules into a KiCad `.kicad_dru` (Design Rule Update) file that can be placed
+  alongside a `.kicad_pcb` to enforce the manifest constraints natively inside
+  KiCad's DRC engine.
+
+  The `.kicad_dru` format uses KiCad's S-expression rule language (introduced
+  in KiCad 6). Each rule has a condition expression and one or more constraints.
+  Reference: https://docs.kicad.org/master/en/pcbnew/pcbnew_advanced.html#custom_design_rules
+
+  For each net class in the manifest, the emitter writes:
+    (rule "<nc_name> track-width"
+       (condition "A.NetClass == '<nc_name>'")
+       (constraint track-width (min <min_width_mm>mm))
+    )
+
+  If a net class has an impedance_profile, the emitter adds a comment citing
+  the profile id and target impedance so the board designer knows which traces
+  need impedance-controlled routing.
+
+  The CLI writes the file to stdout (default) or to -o <path>.
+
+status: review
+owner: arananet
+team: pcb-spec
+implementation_skill: null
+
+acceptance_criteria:
+  - "`src/pcb_spec/emit/kicad.py` exports `emit_dru(manifest) -> str`. Returns a valid `.kicad_dru` string for any loaded Manifest."
+  - "The output begins with `(version 1)` as required by the KiCad DRU format."
+  - "For each net class with `min_width_mil > 0`, the output contains a rule block with `(constraint track-width (min Xmm))` where X = min_width_mil * 0.0254, rounded to 4 decimal places."
+  - "Each rule block contains `(condition \"A.NetClass == '<nc_name>'\")` using the exact net class key from the manifest."
+  - "If a net class has an `impedance_profile`, the rule block includes a comment line `; impedance_profile: <id> (target <ohm> ohm ±<tol>%)` so board designers can identify controlled-impedance traces."
+  - "CLI `pcb-spec emit kicad <manifest>` prints the .kicad_dru content to stdout and exits 0."
+  - "CLI `pcb-spec emit kicad <manifest> -o <path>` writes the file to path and exits 0."
+  - "`src/pcb_spec/emit/__init__.py` exists so `emit` is a proper package."
+
+test_plan:
+  unit_tests:
+    - "emit_dru output starts with '(version 1)'."
+    - "emit_dru for minimal-2layer manifest contains a rule for 'DEFAULT' with track-width 0.1524mm (6 mil * 0.0254)."
+    - "emit_dru for controlled-impedance manifest contains rules for DEFAULT, USB_DIFF, and RF_50."
+    - "The USB_DIFF rule contains a comment referencing the impedance profile id."
+    - "emit_dru returns a str (not bytes)."
+    - "All track-width values in the output are non-negative floats with 'mm' suffix."
+
+  integration_tests:
+    - "CLI `pcb-spec emit kicad examples/minimal-2layer/manifest.yaml` exits 0 and stdout contains '(version 1)'."
+    - "CLI with -o <path> writes a file containing '(version 1)'."
+
+  out_of_scope_for_this_spec:
+    - "Clearance rules (future extension)"
+    - "Via size rules"
+    - "Layer-specific rules"
+    - "Roundtrip parsing of the emitted DRU back into a manifest"
+    - "KiCad PCB file modification"
+
+dependencies:
+  - manifest-schema
+  - schema-validator
+
+deliverables:
+  - "src/pcb_spec/emit/__init__.py"
+  - "src/pcb_spec/emit/kicad.py"
+  - "tests/test_kicad_emitter.py"
+
+notes: |
+  KiCad DRU reference: https://docs.kicad.org/master/en/pcbnew/pcbnew_advanced.html
+  The format is plain text with S-expression blocks. KiCad 6+ is required.
+  The file should be named <project>.kicad_dru and placed in the project directory.
+
+  Mil to mm: 1 mil = 0.0254 mm. Round to 4 decimal places to avoid float noise.
+
+  Net class names in KiCad must match the names assigned in the schematic's
+  net class editor. The manifest net_classes keys are used directly as KiCad
+  net class names — the board designer is responsible for keeping them in sync.

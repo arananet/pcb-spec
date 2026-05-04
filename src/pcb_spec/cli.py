@@ -88,6 +88,22 @@ def _cmd_check(args: argparse.Namespace) -> int:
     return 0 if status == "pass" else 1
 
 
+def _cmd_emit_kicad(args: argparse.Namespace) -> int:
+    from pcb_spec.emit.kicad import emit_dru
+    from pcb_spec.schema import load_manifest
+    try:
+        manifest = load_manifest(args.manifest)
+    except Exception as exc:
+        print(f"Error loading manifest: {exc}", file=sys.stderr)
+        return 1
+    content = emit_dru(manifest)
+    if args.output:
+        Path(args.output).write_text(content)
+    else:
+        print(content, end="")
+    return 0
+
+
 def _cmd_calc_impedance(args: argparse.Namespace) -> int:
     from pcb_spec.calc.impedance import microstrip_impedance, stripline_impedance
     try:
@@ -149,6 +165,15 @@ def main() -> None:
     cur.add_argument("--copper-oz", type=float, required=True, help="Copper weight (oz)")
     cur.add_argument("--layer", choices=["external", "internal"], required=True)
 
+    # emit subcommand group
+    emit = sub.add_parser("emit", help="Emit EDA rule files from manifest")
+    emit_sub = emit.add_subparsers(dest="emit_cmd", required=True)
+
+    # emit kicad
+    eki = emit_sub.add_parser("kicad", help="Emit KiCad .kicad_dru design rules file")
+    eki.add_argument("manifest", help="Path to the manifest YAML file")
+    eki.add_argument("-o", "--output", metavar="PATH", help="Write to file instead of stdout")
+
     args = parser.parse_args()
 
     if args.command == "check":
@@ -160,6 +185,9 @@ def main() -> None:
             sys.exit(_cmd_calc_impedance(args))
         elif args.calc_cmd == "current-capacity":
             sys.exit(_cmd_calc_current(args))
+    elif args.command == "emit":
+        if args.emit_cmd == "kicad":
+            sys.exit(_cmd_emit_kicad(args))
 
 
 if __name__ == "__main__":
