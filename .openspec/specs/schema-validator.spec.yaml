@@ -1,0 +1,90 @@
+title: "Schema Validator v0.1"
+description: |
+  Implement `pcb-spec validate <manifest.yaml>` — the first runnable CLI
+  subcommand. Validates a manifest file against the JSON Schema, then runs
+  a suite of internal consistency checks that the schema alone cannot express
+  (cross-references between sections, semantic constraints).
+
+  This is the gate between authoring and the rest of the pipeline. Every
+  downstream spec (conformance-checker, kicad-rule-emitter, calculators)
+  assumes the manifest it receives has already passed this validator.
+
+  The CLI returns:
+    - Exit code 0 on success
+    - Exit code 1 on validation failure
+    - Human-readable Markdown to stdout (pass/fail summary + error list)
+    - Structured JSON to --report <path> if requested
+
+  The JSON report schema defined here is the public API consumed by CI and
+  by the pcb-spec-skill. Non-additive changes require a version bump.
+
+status: review
+
+owner: arananet
+team: pcb-spec
+implementation_skill: null
+
+acceptance_criteria:
+  - "`pcb-spec validate <path>` is available as a CLI subcommand via the entry point defined in pyproject.toml. Exit code 0 on valid manifest, exit code 1 on any error."
+  - "On success, stdout contains a Markdown summary: one line 'PASS: <path>' followed by a brief summary of what was validated (section names, counts)."
+  - "On failure, stdout contains a Markdown error list: 'FAIL: <path>' header, then each error as a bullet with a machine-readable error code (e.g. SCHEMA_ERROR, MISSING_FIELD, UNDEFINED_REF) and a human-readable message."
+  - "With --report <path>, the validator writes a JSON file with fields: schema_version (str '0.1'), status ('pass' | 'fail'), manifest_path (str), errors (list of {code, message, location}). This is the public report schema."
+  - "The validator runs internal consistency checks beyond JSON Schema: (a) every net_class member that appears in placement must exist in net_classes keys; (b) every impedance_profile id referenced by a net_class must be defined in rules.impedance.profiles; (c) every gate id in gates.schematic/layout/dfm must be non-empty and unique within its phase."
+  - "src/pcb_spec/validator/__init__.py exports validate(manifest_path) -> ValidationResult. ValidationResult is a dataclass with fields: status (Literal['pass','fail']), errors (list[ValidationError]). ValidationError has fields: code (str), message (str), location (str)."
+  - "src/pcb_spec/cli.py wires up argparse with subcommands: validate. The validate subcommand accepts positional <manifest> and optional --report <path>."
+  - "docs/report-schema.md documents the JSON report format as a public API reference."
+
+test_plan:
+  unit_tests:
+    - "validate() returns status='pass' for each of the three example manifests (minimal-2layer, 4layer-mixed-signal, controlled-impedance)."
+    - "validate() returns status='fail' with code SCHEMA_ERROR for a manifest missing a required field (manifest_version)."
+    - "validate() returns status='fail' with code SCHEMA_ERROR for a manifest with an unsupported manifest_version."
+    - "validate() returns status='fail' with code UNDEFINED_REF for a manifest whose net_class references an impedance_profile id that does not exist."
+    - "validate() returns status='fail' with code MISSING_FIELD or SCHEMA_ERROR for a manifest with a gate entry missing the id field."
+    - "validate() returns status='fail' with code UNDEFINED_REF for a placement entry referencing a net_class key that does not exist in net_classes."
+    - "validate() returns status='fail' with a non-empty location field that identifies where the error occurred (e.g. 'net_classes.HIGH_SPEED.rules.impedance_profile')."
+
+  integration_tests:
+    - "CLI invocation `python3 -m pcb_spec validate examples/minimal-2layer/manifest.yaml` exits 0 and prints 'PASS' to stdout."
+    - "CLI invocation against a fixture with a schema error exits 1 and prints 'FAIL' to stdout."
+    - "CLI invocation with --report out.json writes a valid JSON file matching the report schema (schema_version='0.1', status, manifest_path, errors)."
+    - "CLI invocation with --report out.json on a passing manifest writes errors: []."
+
+  out_of_scope_for_this_spec:
+    - "Netlist validation (that is in conformance-checker spec)"
+    - "BOM cross-reference checks against the bundled library (that is in conformance-checker spec)"
+    - "DFM checks against fab capability data (that is in conformance-checker spec)"
+    - "pcb-spec check subcommand (that is in conformance-checker spec)"
+    - "pcb-spec emit subcommand (that is in kicad-rule-emitter spec)"
+
+dependencies:
+  - manifest-schema
+  - rule-engine-contract
+
+deliverables:
+  - "src/pcb_spec/validator/__init__.py"
+  - "src/pcb_spec/validator/rules.py"
+  - "src/pcb_spec/cli.py"
+  - "tests/test_validator.py"
+  - "docs/report-schema.md"
+
+notes: |
+  The validator deliberately does not re-implement the schema checks already
+  covered by Pydantic (load_manifest raises ValidationError for those). The
+  validator's job is to (a) catch Pydantic errors and reformat them with
+  structured codes, and (b) run the additional cross-reference checks that
+  Pydantic's model_validator already handles during load. If load_manifest
+  succeeds, the manifest is structurally valid; validator/rules.py then runs
+  the semantic checks.
+
+  Wait — load_manifest already runs the model_validators (cross-ref checks).
+  So the validator module is primarily: (1) call load_manifest and catch
+  ValidationError, converting it to structured ValidationError objects with
+  codes; (2) return ValidationResult. The internal consistency checks are
+  already in the Pydantic model. Do not duplicate them.
+
+  The cli.py module is the entry point. It must stay thin: parse args,
+  call validate(), format output. No logic in cli.py beyond dispatch.
+
+  The report JSON schema is public. Do not add fields without bumping
+  schema_version. Document every field in docs/report-schema.md.
