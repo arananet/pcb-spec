@@ -1,0 +1,76 @@
+# OSH Park standard PCB capability matrix
+#
+# Primary source: https://docs.oshpark.com/services/two-layer/
+#                 https://docs.oshpark.com/services/four-layer/
+#
+# Structure mirrors data/fab/jlcpcb.yaml. Values are unpopulated pending
+# verification against the official OSH Park capability pages.
+# Note: OSH Park uses fixed stackups (2-layer, 4-layer, flex). Their specs
+# are published at docs.oshpark.com per service type.
+
+schema_version: "0.1"
+fab_id: "oshpark"
+fab_name: "OSH Park"
+capability_sheet_url: "https://docs.oshpark.com/services/"
+last_verified: null
+
+capabilities:
+  min_trace_width_mm:
+    value: null
+    verified: false
+    citation: "TODO: OSH Park Service Specs — Minimum Trace Width"
+    notes: "Verify per service (2-layer vs 4-layer) at docs.oshpark.com"
+
+  min_trace_spacing_mm:
+    value: null
+    verified: false
+    citation: "TODO: OSH Park Service Specs — Minimum Trace Spacing"
+
+  min_drill_mm:
+    value: null
+    verified: false
+    citation: "TODO: OSH Park Service Specs — Minimum Drill Hole Size"
+
+  min_annular_ring_mm:
+    value: null
+    verified: false
+    citation: "TODO: OSH Park Service Specs — Minimum Annular Ring"
+
+  max_board_mm:
+    width: null
+    height: null
+    verified: false
+    citation: "TODO: OSH Park Service Specs — Maximum Board Dimensions"
+
+  min_board_mm:
+    width: null
+    height: null
+    verified: false
+    citation: "TODO: OSH Park Service Specs — Minimum Board Dimensions"
+
+  board_thickness_mm:
+    values: []
+    verified: false
+    citation: "TODO: OSH Park Service Specs — Board Thickness"
+    notes: "OSH Park uses fixed stackups; thickness is per service type"
+
+  copper_weights_oz:
+    outer: []
+    inner: []
+    verified: false
+    citation: "TODO: OSH Park Service Specs — Copper Weight"
+
+  layer_counts:
+    values: []
+    verified: false
+    citation: "TODO: OSH Park Service Specs — Layer Count"
+
+  surface_finishes:
+    values: []
+    verified: false
+    citation: "TODO: OSH Park Service Specs — Surface Finish"
+
+  min_copper_to_edge_mm:
+    value: null
+    verified: false
+    citation: "TODO: OSH Park Service Specs — Copper to Board Edge"

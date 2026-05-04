@@ -31,6 +31,9 @@ Guidelines:
 - Rule engine contract implementation in `src/pcb_spec/engine.py`: `RuleSource`, `Severity`, `ResolutionStep`, `RuleEntry`, `Violation` (with `stable_hash`), `FactBase`, `RuleRegistry`, `resolve_value`, `resolve_numeric_min`, `evaluate` (spec: rule-engine-contract)
 - `tests/test_engine.py` — 17 tests covering all unit and integration items in the spec's test_plan, all passing
 - `docs/adr/001-rule-engine-contract.md` — four architectural decisions: predicates-in-code, four-source resolution order, no constraint solving, stable violation hash
+- Standards rule library (spec: standards-rule-library): `data/ipc/ipc-2221.yaml` (IPC-2221B Table 6-1 voltage clearance, B1–B9), `data/ipc/ipc-2152.yaml` (IPC-2152 model parameters, IPC-2221 fallback polynomial), `data/fab/jlcpcb.yaml` + `pcbway.yaml` + `oshpark.yaml` (capability matrix structure; JLCPCB values require manual verification at https://jlcpcb.com/capabilities/pcb-capabilities and https://jlcpcb.com/blog/pcb-design-rules-best-practices)
+- BOM component library (spec: bom-library-format): `data/bom/library.yaml` — 19 seed entries (linear regulators, LDO, NPN transistor, Schottky diode, USB connectors, MCUs, crystals, ferrite beads, passive package families) all with manufacturer datasheet citations
+- `tests/test_standards.py` (19 tests) and `tests/test_bom_library.py` (9 tests), all passing
 
 ### Changed
 -

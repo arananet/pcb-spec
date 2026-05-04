@@ -40,7 +40,7 @@ A PCB project is two artifacts pretending to be one.
 | --- | --- | --- |
 | **Manifest schema** | Canonical YAML schema (stackup, rules, net classes, placement, gates) | implemented |
 | **Rule engine contract** | Rule/Violation/FactBase types, four-source resolution order, evaluation model | implemented |
-| **Standards rule library** | IPC-2152, IPC-2221, common fab DFM minimums as bundled data | planned |
+| **Standards rule library** | IPC-2152, IPC-2221, common fab DFM minimums as bundled data | implemented (JLCPCB values need manual verification) |
 | **Schema validator** | `pcb-spec validate` — schema + internal consistency checks | planned |
 | **Conformance checker** | Walks netlist + manifest, runs schematic-phase gates | planned |
 | **EDA rule translator** | Emits native syntax (KiCad `.kicad_dru` first) | planned |
@@ -131,7 +131,16 @@ docs/
 
 ## Status
 
-Experimental. `manifest-schema` and `rule-engine-contract` are implemented (34 tests, all passing). `pcb-spec-skill` is drafted. Everything else is planned — see [`docs/specs-roadmap.md`](docs/specs-roadmap.md) for the build order and dependencies. Architecture: CLI + Claude Skill, no MCP.
+Experimental. `manifest-schema`, `rule-engine-contract`, `standards-rule-library`, and `bom-library-format` are implemented (62 tests, all passing). `pcb-spec-skill` is drafted. Everything else is planned — see [`docs/specs-roadmap.md`](docs/specs-roadmap.md) for the build order and dependencies. Architecture: CLI + Claude Skill, no MCP.
+
+### Reference sources
+
+Standards and manufacturer documentation used in this project:
+
+- **IPC-2221B:2003** — Generic Standard on Printed Board Design. Table 6-1 (voltage clearance). Available from [IPC](https://www.ipc.org).
+- **IPC-2152:2009** — Standard for Determining Current Carrying Capacity in Printed Board Design. Available from [IPC](https://www.ipc.org). Reference: [ProtoExpress trace width guide](https://www.protoexpress.com/blog/how-to-optimize-your-pcb-trace-using-ipc-2152-standard/).
+- **JLCPCB Standard PCB Capabilities** — [jlcpcb.com/capabilities/pcb-capabilities](https://jlcpcb.com/capabilities/pcb-capabilities). Design rules: [jlcpcb.com/blog/pcb-design-rules-best-practices](https://jlcpcb.com/blog/pcb-design-rules-best-practices).
+- **KiCad CLI reference** — [docs.kicad.org/master/en/cli/cli.html](https://docs.kicad.org/master/en/cli/cli.html).
 
 ## Coding guidelines
 

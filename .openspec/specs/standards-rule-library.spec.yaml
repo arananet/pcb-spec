@@ -1,0 +1,75 @@
+title: "Standards Rule Library v0.1"
+description: |
+  Bundle public standards data as versioned YAML files used by the calculator
+  modules and conformance checker. Data only — no code. User-replaceable.
+  Every entry carries a citation field pointing to the standard clause or fab
+  capability sheet it came from.
+
+  Deliverables:
+    data/ipc/ipc-2221.yaml   — voltage clearance table (IPC-2221B Table 6-1)
+    data/ipc/ipc-2152.yaml   — current capacity curve parameters (IPC-2152:2009)
+    data/fab/jlcpcb.yaml     — JLCPCB Standard PCB capability matrix
+    data/fab/pcbway.yaml     — PCBWay standard capability matrix (structure only)
+    data/fab/oshpark.yaml    — OSH Park capability matrix (structure only)
+
+  Each YAML file defines a schema version field so downstream code can assert
+  it is reading a compatible format. Values that could not be verified against
+  a primary source during implementation are marked with a TODO comment and the
+  citation URL so a human can fill them in.
+
+status: approved
+
+owner: arananet
+team: pcb-spec
+implementation_skill: null
+
+acceptance_criteria:
+  - "data/ipc/ipc-2221.yaml exists with schema_version field and voltage_clearance_table array. Each entry has: voltage_class (str), min_voltage_v (float), max_voltage_v (float), clearance_external_uncoated_mm (float), clearance_external_coated_mm (float), clearance_internal_mm (float), citation (str). Source: IPC-2221B:2003 Table 6-1."
+  - "data/ipc/ipc-2152.yaml exists with schema_version field and the IPC-2152 polynomial model parameters (or a reference to the calculator spec that will implement them). Every numeric entry has a citation field."
+  - "data/fab/jlcpcb.yaml exists with schema_version, fab_id, capability_sheet_url, and a capabilities object. Capabilities include: min_trace_width_mm, min_trace_spacing_mm, min_drill_mm, min_annular_ring_mm, copper_weights_oz (list), board_thickness_mm (list), max_board_mm (width, height). Each value has a citation field."
+  - "data/fab/pcbway.yaml and data/fab/oshpark.yaml exist with the same schema as jlcpcb.yaml, with structure fully defined. Values that could not be verified from primary sources are marked TODO in the citation field."
+  - "All YAML files are loadable with yaml.safe_load() without error."
+  - "A test in tests/test_standards.py verifies that each file loads, contains schema_version, and that every numeric leaf value in data/ipc/ has a non-empty citation field."
+
+test_plan:
+  unit_tests:
+    - "Each of the five data files loads without error via yaml.safe_load()."
+    - "data/ipc/ipc-2221.yaml contains exactly the expected number of voltage classes (B1 through B9 per IPC-2221B Table 6-1)."
+    - "Every entry in data/ipc/ipc-2221.yaml has all required fields and non-empty citation."
+    - "data/fab/jlcpcb.yaml has fab_id == 'jlcpcb' and a non-empty capability_sheet_url."
+    - "Every numeric value in data/ipc/ files has a non-empty citation string (enforced by test, not just convention)."
+
+  out_of_scope_for_this_spec:
+    - "Calculator implementations (those are in impedance-calculator and current-capacity-calculator specs)"
+    - "Conformance gate predicates that use this data (those are in conformance-checker spec)"
+    - "PCBWay and OSH Park numeric values (structure only in this spec; values require access to their published capability sheets)"
+    - "More than one fab's complete numeric data (JLCPCB is the primary; others are stubs)"
+
+dependencies:
+  - manifest-schema
+  - rule-engine-contract
+
+deliverables:
+  - "data/ipc/ipc-2221.yaml"
+  - "data/ipc/ipc-2152.yaml"
+  - "data/fab/jlcpcb.yaml"
+  - "data/fab/pcbway.yaml"
+  - "data/fab/oshpark.yaml"
+  - "tests/test_standards.py"
+
+notes: |
+  The IPC-2152 and IPC-2221 standards are proprietary documents sold by IPC/ANSI.
+  The ipc-2221.yaml voltage clearance table is derived from IPC-2221B:2003 Table
+  6-1, which is widely reproduced in PCB design references and has been stable
+  since the 2003 revision. Values should still be verified against the original
+  standard document before production use.
+
+  The ipc-2152.yaml file captures the model parameters for the current-capacity
+  polynomial. The actual implementation of the polynomial lives in the
+  current-capacity-calculator spec. This file is the data contract between the
+  library and the calculator.
+
+  JLCPCB's capability page blocks automated fetching. Values in jlcpcb.yaml that
+  were not verifiable from the primary source (https://jlcpcb.com/capabilities/pcb-capabilities)
+  are marked with TODO comments and must be filled in by a human with access to
+  the official page before the data file is used in production gates.

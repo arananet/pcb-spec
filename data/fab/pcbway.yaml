@@ -1,0 +1,72 @@
+# PCBWay standard PCB capability matrix
+#
+# Primary source: https://www.pcbway.com/capabilities.html
+#
+# Structure mirrors data/fab/jlcpcb.yaml. Values are unpopulated pending
+# verification against the official PCBWay capability page.
+# Set last_verified and verified: true on each field after manual check.
+
+schema_version: "0.1"
+fab_id: "pcbway"
+fab_name: "PCBWay"
+capability_sheet_url: "https://www.pcbway.com/capabilities.html"
+last_verified: null
+
+capabilities:
+  min_trace_width_mm:
+    value: null
+    verified: false
+    citation: "TODO: PCBWay Capabilities — Minimum Trace Width"
+
+  min_trace_spacing_mm:
+    value: null
+    verified: false
+    citation: "TODO: PCBWay Capabilities — Minimum Trace Spacing"
+
+  min_drill_mm:
+    value: null
+    verified: false
+    citation: "TODO: PCBWay Capabilities — Minimum Drill Hole Size"
+
+  min_annular_ring_mm:
+    value: null
+    verified: false
+    citation: "TODO: PCBWay Capabilities — Minimum Annular Ring"
+
+  max_board_mm:
+    width: null
+    height: null
+    verified: false
+    citation: "TODO: PCBWay Capabilities — Maximum Board Dimensions"
+
+  min_board_mm:
+    width: null
+    height: null
+    verified: false
+    citation: "TODO: PCBWay Capabilities — Minimum Board Dimensions"
+
+  board_thickness_mm:
+    values: []
+    verified: false
+    citation: "TODO: PCBWay Capabilities — Board Thickness"
+
+  copper_weights_oz:
+    outer: []
+    inner: []
+    verified: false
+    citation: "TODO: PCBWay Capabilities — Copper Weight"
+
+  layer_counts:
+    values: []
+    verified: false
+    citation: "TODO: PCBWay Capabilities — Layer Count"
+
+  surface_finishes:
+    values: []
+    verified: false
+    citation: "TODO: PCBWay Capabilities — Surface Finish"
+
+  min_copper_to_edge_mm:
+    value: null
+    verified: false
+    citation: "TODO: PCBWay Capabilities — Copper to Board Edge"

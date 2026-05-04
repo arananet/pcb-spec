@@ -1,0 +1,66 @@
+title: "BOM Library Format v0.1"
+description: |
+  Define the per-component YAML format for the bundled BOM library. Each entry
+  describes a component's package, ratings, pin count, and required externals.
+  The conformance checker cross-references placement entries in the manifest
+  against this library to confirm every placed component is a known, approved
+  part.
+
+  Deliverables:
+    data/bom/library.yaml — seed library with ~20 common components.
+
+  Component data comes exclusively from manufacturer datasheets cited inline.
+  No values from memory or estimation. Entries without a verified datasheet
+  citation are marked TODO.
+
+status: approved
+
+owner: arananet
+team: pcb-spec
+implementation_skill: null
+
+acceptance_criteria:
+  - "data/bom/library.yaml exists with schema_version field and a components list."
+  - "Each component entry has: id (str, unique, uppercase with underscores), manufacturer (str), mpn (str — manufacturer part number), description (str), package (str), pin_count (int), datasheet_url (str), ratings (dict with relevant electrical values, all with unit suffixes), notes (str, optional)."
+  - "Library contains at least 15 entries covering: a linear regulator (e.g. LM7805), an LDO (e.g. AMS1117-3.3), a general-purpose NPN transistor, a Schottky diode, a USB Type-C connector, an MCU (e.g. STM32F103C8), a crystal oscillator, a ferrite bead, decoupling capacitor families (0402, 0603), and resistor families (0402, 0603)."
+  - "Every entry's ratings values have explicit unit suffixes (e.g. max_voltage_v, max_current_a, power_rating_w) — no bare numeric fields."
+  - "Every entry has a non-empty datasheet_url that is a plausible manufacturer or distributor URL (not verified to resolve, just structurally valid)."
+  - "A test in tests/test_bom_library.py verifies the file loads, schema_version is present, all required fields exist on every entry, all ids are unique, and all rating fields have unit-suffix names."
+
+test_plan:
+  unit_tests:
+    - "data/bom/library.yaml loads without error via yaml.safe_load()."
+    - "schema_version field is present."
+    - "All component ids are unique across the library."
+    - "Every component entry has all required fields: id, manufacturer, mpn, description, package, pin_count, datasheet_url, ratings."
+    - "No rating field name is a bare number without a unit suffix (checked by asserting all keys in ratings end with a known suffix: _v, _a, _w, _ohm, _hz, _f, _h, _c, _mhz, _pf, _uf, _nf, _mohm)."
+    - "Library contains at least 15 entries."
+
+  out_of_scope_for_this_spec:
+    - "Conformance gate that cross-references the netlist against this library (that is in conformance-checker spec)"
+    - "BOM library search/query tooling"
+    - "Automatic datasheet fetching or parsing"
+    - "More than ~20 seed entries (user adds their own)"
+
+dependencies:
+  - manifest-schema
+
+deliverables:
+  - "data/bom/library.yaml"
+  - "tests/test_bom_library.py"
+
+notes: |
+  Component data must come from manufacturer datasheets, not from memory.
+  Every rating value in this file has a datasheet_url pointing to the source.
+  If a specific value (e.g. max_current_a) is in the datasheet but the URL
+  couldn't be verified to resolve at implementation time, include the URL
+  anyway with a TODO comment noting it needs a live check.
+
+  The id field is the key used in manifest placement entries
+  (manifest.placement[].component_id). Ids are uppercase with underscores,
+  e.g. LM7805_TO220, AMS1117_3V3_SOT223. Ids are intentionally package-specific
+  because the conformance checker may need to check footprint compatibility.
+
+  Passive component families (resistors, capacitors) get one entry per package
+  family, not per value. The conformance checker checks that placed passives use
+  an approved package, not a specific value.
