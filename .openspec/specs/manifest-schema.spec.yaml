@@ -11,7 +11,7 @@ description: |
   conformance checker, rule translator, calculators, LLM integration)
   depend on the schema being stable and versioned.
 
-status: review
+status: approved
 
 owner: arananet
 team: pcb-spec
@@ -67,6 +67,12 @@ deliverables:
   - "examples/controlled-impedance/manifest.yaml"
   - "docs/manifest-schema.md (auto-generated)"
   - "tests/test_schema.py"
+
+implementation_notes: |
+  Implemented on branch claude/init-repo-setup-ubt15. All 17 tests pass.
+  JSON Schema (Draft 2020-12) and Pydantic model agree on all three examples.
+  Numeric values in examples are either cited DFM floors or marked TODO for
+  downstream specs (impedance-calculator, current-capacity-calculator).
 
 notes: |
   Design constraints worth flagging for the implementer:

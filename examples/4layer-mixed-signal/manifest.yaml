@@ -1,0 +1,103 @@
+manifest_version: "0.1"
+
+project:
+  name: "4layer-mixed-signal"
+  revision: "r1"
+
+stackup:
+  fab_house_id: "jlcpcb"
+  # JLC04161H-3313 is JLCPCB's documented 4-layer stackup using 1.6mm total
+  # thickness with 7628 prepreg. Source: JLCPCB 4-layer stackup capability sheet.
+  stackup_id: "JLC04161H-3313"
+  layers:
+    - number: 1
+      name: "F.Cu"
+      type: signal
+      copper_oz: 1
+    - number: 2
+      name: "In1.Cu"
+      type: plane     # GND reference plane
+      copper_oz: 0.5
+    - number: 3
+      name: "In2.Cu"
+      type: plane     # PWR distribution plane
+      copper_oz: 0.5
+    - number: 4
+      name: "B.Cu"
+      type: signal
+      copper_oz: 1
+
+rules:
+  current_capacity:
+    citation: "IPC-2152, Table 5-1"
+    entries: []  # populated by standards-rule-library spec
+
+  spacing:
+    citation: "IPC-2221B, Table 6-1"
+    entries: []  # populated by standards-rule-library spec
+
+  fab_dfm:
+    citation: "JLCPCB Standard PCB Capability — https://jlcpcb.com/capabilities/pcb-capabilities"
+    entries: []  # populated by standards-rule-library spec
+
+  impedance:
+    citation: "IPC-2141A"
+    profiles: []  # no controlled-impedance nets in this example
+
+net_classes:
+  DEFAULT:
+    description: "General-purpose signals with no special routing requirements."
+    members: ["SDA", "SCL", "GPIO_0", "GPIO_1"]
+    rules:
+      # 6 mil: JLCPCB published minimum trace width (DFM floor).
+      # Source: JLCPCB Standard PCB Capability sheet.
+      min_width_mil: 6
+      route_layers: ["F.Cu", "B.Cu"]
+
+  POWER:
+    description: "DC power rails. Actual min_width_mil must be sourced from the
+      current-capacity-calculator spec (IPC-2152) once implemented."
+    members: ["+3V3", "+5V", "GND"]
+    rules:
+      # 6 mil is the DFM floor only. Current-capacity minimum for the target
+      # current must be computed via IPC-2152 through the current-capacity-calculator.
+      # TODO: replace with IPC-2152-derived value once current-capacity-calculator is merged.
+      min_width_mil: 6
+      route_layers: ["F.Cu", "In2.Cu", "B.Cu"]
+
+  HIGH_SPEED:
+    description: "SPI bus and other signals above 10 MHz."
+    members: ["SPI_CLK", "SPI_MOSI", "SPI_MISO", "SPI_CS"]
+    rules:
+      # 6 mil is the DFM floor. Characteristic impedance target and the
+      # resulting width are computed by the impedance-calculator spec.
+      # TODO: set impedance_profile once impedance-calculator is merged.
+      min_width_mil: 6
+      route_layers: ["F.Cu"]
+
+placement:
+  - component_id: "U1"
+    net_class: "POWER"
+    notes: "Main MCU. Keep decoupling caps within 2mm of each power pin."
+  - component_id: "U2"
+    net_class: "HIGH_SPEED"
+    notes: "SPI flash. Keep SPI traces short and matched."
+
+gates:
+  schematic:
+    - id: "SCH-001"
+      rule: "Every VDD/VCC pin on U1 and U2 must have a dedicated 100nF decoupling capacitor on the same net within 3 connection hops."
+    - id: "SCH-002"
+      rule: "SPI_CS must not be shared between U1 and U2."
+
+  layout:
+    - id: "LAY-001"
+      rule: "SPI bus traces on F.Cu must be length-matched within 250 mil of the longest trace in the group."
+    - id: "LAY-002"
+      rule: "No HIGH_SPEED signal may cross a plane split on In1.Cu or In2.Cu."
+
+  dfm:
+    - id: "DFM-001"
+      rule: "All traces must meet or exceed the min_width_mil of their net class."
+    - id: "DFM-002"
+      rule: "Via drill diameter must be >= 0.3mm (JLCPCB standard minimum)."

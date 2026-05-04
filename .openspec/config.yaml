@@ -37,7 +37,7 @@ spec:
 
 testing:
   require_tests: true
-  test_command: "pytest"
+  test_command: "python3 -m pytest"
   coverage_threshold: null
   fail_on_missing_tests: true
 

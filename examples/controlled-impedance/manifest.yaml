@@ -1,0 +1,114 @@
+manifest_version: "0.1"
+
+project:
+  name: "controlled-impedance"
+  revision: "r1"
+
+stackup:
+  fab_house_id: "jlcpcb"
+  # JLC04161H-3313: JLCPCB 4-layer stackup, 1.6mm total, 7628 prepreg.
+  # H between F.Cu and In1.Cu: 0.21mm (from JLCPCB stackup table).
+  # Source: JLCPCB 4-layer stackup capability sheet.
+  stackup_id: "JLC04161H-3313"
+  layers:
+    - number: 1
+      name: "F.Cu"
+      type: signal
+      copper_oz: 1
+    - number: 2
+      name: "In1.Cu"
+      type: plane     # GND reference plane for F.Cu signals
+      copper_oz: 0.5
+    - number: 3
+      name: "In2.Cu"
+      type: plane     # PWR plane
+      copper_oz: 0.5
+    - number: 4
+      name: "B.Cu"
+      type: signal
+      copper_oz: 1
+
+rules:
+  current_capacity:
+    citation: "IPC-2152, Table 5-1"
+    entries: []  # populated by standards-rule-library spec
+
+  spacing:
+    citation: "IPC-2221B, Table 6-1"
+    entries: []  # populated by standards-rule-library spec
+
+  fab_dfm:
+    citation: "JLCPCB Standard PCB Capability — https://jlcpcb.com/capabilities/pcb-capabilities"
+    entries: []  # populated by standards-rule-library spec
+
+  impedance:
+    citation: "IPC-2141A; Wadell, 'Transmission Line Design Handbook', 1991"
+    profiles:
+      - id: "USB_90_DIFF"
+        # USB 2.0 Full/High-Speed differential pair: 90-ohm differential impedance.
+        # Source: USB 2.0 Specification, Section 7.1.1.
+        target_ohm: 90
+        tolerance_pct: 10
+
+      - id: "SE_50_OHM"
+        # 50-ohm single-ended microstrip.
+        # Standard target for general RF and high-speed single-ended signals.
+        # Trace width must be computed by impedance-calculator for this stackup.
+        target_ohm: 50
+        tolerance_pct: 10
+
+net_classes:
+  DEFAULT:
+    description: "General-purpose signals."
+    members: ["GPIO_0", "GPIO_1", "I2C_SDA", "I2C_SCL"]
+    rules:
+      # 6 mil: JLCPCB published minimum trace width (DFM floor).
+      # Source: JLCPCB Standard PCB Capability sheet.
+      min_width_mil: 6
+      route_layers: ["F.Cu", "B.Cu"]
+
+  USB_DIFF:
+    description: "USB 2.0 differential pairs requiring 90-ohm differential impedance."
+    members: ["USB_D+", "USB_D-"]
+    rules:
+      # 6 mil is the DFM floor; actual width for 90-ohm differential impedance
+      # on this stackup must be computed by the impedance-calculator spec.
+      # TODO: replace with computed value once impedance-calculator is merged.
+      min_width_mil: 6
+      route_layers: ["F.Cu"]
+      impedance_profile: "USB_90_DIFF"
+
+  RF_50:
+    description: "50-ohm single-ended signals."
+    members: ["RF_SIG"]
+    rules:
+      # 6 mil is the DFM floor; 50-ohm microstrip width on this stackup
+      # requires the impedance-calculator. See impedance profile SE_50_OHM.
+      # TODO: replace with computed value once impedance-calculator is merged.
+      min_width_mil: 6
+      route_layers: ["F.Cu"]
+      impedance_profile: "SE_50_OHM"
+
+placement:
+  - component_id: "J1"
+    net_class: "USB_DIFF"
+    notes: "USB connector. Route D+/D- as a differential pair to U1 pins."
+
+gates:
+  schematic:
+    - id: "SCH-001"
+      rule: "USB_D+ and USB_D- must connect to a USB transceiver or MCU USB peripheral. No resistors in series except for optional 22-ohm termination within 1 inch of the connector."
+
+  layout:
+    - id: "LAY-001"
+      rule: "USB_DIFF pairs must be routed as matched-length differential pairs. Length mismatch must not exceed 5 mil."
+    - id: "LAY-002"
+      rule: "USB_DIFF traces must reference a continuous GND plane on the adjacent layer with no splits under the traces."
+    - id: "LAY-003"
+      rule: "RF_50 traces must not have stubs, vias, or layer changes. Route point-to-point on F.Cu."
+
+  dfm:
+    - id: "DFM-001"
+      rule: "All traces must meet or exceed the min_width_mil of their net class."
+    - id: "DFM-002"
+      rule: "Controlled-impedance traces must be flagged to the fab as impedance-controlled. Include stackup note in fab order."

@@ -1,0 +1,41 @@
+# Fixture: stackup layers list with duplicate layer numbers
+manifest_version: "0.1"
+project:
+  name: "test-board"
+  revision: "r1"
+stackup:
+  fab_house_id: "jlcpcb"
+  stackup_id: "jlcpcb-2l"
+  layers:
+    - number: 1
+      name: "F.Cu"
+      type: signal
+      copper_oz: 1
+    - number: 1
+      name: "B.Cu"
+      type: signal
+      copper_oz: 1
+rules:
+  current_capacity:
+    citation: "IPC-2152, Table 5-1"
+    entries: []
+  spacing:
+    citation: "IPC-2221B, Table 6-1"
+    entries: []
+  fab_dfm:
+    citation: "JLCPCB standard PCB capability"
+    entries: []
+  impedance:
+    citation: "IPC-2141A"
+    profiles: []
+net_classes:
+  DEFAULT:
+    description: "Default"
+    members: []
+    rules:
+      min_width_mil: 6
+      route_layers: ["F.Cu", "B.Cu"]
+gates:
+  schematic: []
+  layout: []
+  dfm: []

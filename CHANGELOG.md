@@ -19,7 +19,11 @@ Guidelines:
 ## [Unreleased]
 
 ### Added
--
+- Manifest schema v0.1: JSON Schema + Pydantic models for all five sections (stackup, rules, net_classes, placement, gates) (spec: manifest-schema)
+- `load_manifest` / `dump_manifest` helpers in `src/pcb_spec/schema/__init__.py`
+- Auto-generated schema reference at `docs/manifest-schema.md`
+- Three validated example manifests: `minimal-2layer`, `4layer-mixed-signal`, `controlled-impedance`
+- Full test suite in `tests/test_schema.py` (17 tests, all passing)
 
 ### Changed
 -
