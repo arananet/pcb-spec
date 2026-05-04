@@ -48,7 +48,30 @@ A PCB project is two artifacts pretending to be one.
 | **LLM integration** | Authoring assistant, review assistant, DRC explainer | planned |
 | **Reference projects** | Real boards from the author's bench, used as test fixtures | planned |
 
-## Getting started
+## Using pcb-spec in a board repo
+
+`pcb-spec` is a CI auditor for KiCad projects. Copy the files in
+[`templates/board-repo/`](templates/board-repo/) into your hardware repo
+to wire up the three-gate pipeline:
+
+```
+your-board-repo/
+  AGENTS.md                          # agent contract for this repo
+  manifest.yaml                      # your board's constraint manifest
+  .github/workflows/pcb-spec.yml     # CI pipeline
+  docs/KICAD_EXPORT.md               # manual export procedure
+```
+
+The pipeline runs on every PR: validates the manifest, exports KiCad
+artifacts via `kicad-cli`, then runs three gates in sequence —
+schematic, layout, DFM. Gate failures block the merge. The gate report
+posts as a sticky PR comment. On a version tag, the Gerber bundle attaches
+to the GitHub release.
+
+See [`templates/board-repo/`](templates/board-repo/) for the full files
+with inline documentation.
+
+## Getting started (developing pcb-spec itself)
 
 ```bash
 git clone https://github.com/arananet/pcb-spec.git
@@ -84,6 +107,13 @@ src/pcb_spec/           # Python package
 data/                   # Bundled rule libraries (IPC, fab DFM)
 examples/               # Reference manifests (minimal-2layer, 4layer-mixed-signal,
                         #   controlled-impedance)
+templates/
+  board-repo/           # Drop-in files for a KiCad board repo using pcb-spec
+    AGENTS.md           # Agent contract for the board repo
+    .github/workflows/
+      pcb-spec.yml      # Three-gate CI pipeline
+    docs/
+      KICAD_EXPORT.md   # Manual and headless export procedure
 docs/
   adr/                  # Architecture decisions
   specs-roadmap.md      # Full spec dependency graph and build order

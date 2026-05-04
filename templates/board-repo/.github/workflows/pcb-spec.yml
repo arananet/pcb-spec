@@ -1,0 +1,296 @@
+name: pcb-spec
+
+# Conformance pipeline for KiCad board projects audited by pcb-spec.
+# Runs three gates in order: schematic, layout, dfm.
+# Any gate failure blocks the PR.
+#
+# Triggers on:
+#   - Pull requests (full pipeline, posts report as comment)
+#   - Push to main (full pipeline, fails the build on any gate failure)
+#   - Manual dispatch (for re-running after manifest changes)
+#
+# Installation note:
+#   pcb-spec is not yet published to PyPI. Until it is, the install step
+#   uses the GitHub source directly. Once published, replace with:
+#     pip install pcb-spec
+
+on:
+  pull_request:
+    paths:
+      - "manifest.yaml"
+      - "bom-library/**"
+      - "**/*.kicad_sch"
+      - "**/*.kicad_pcb"
+      - "**/*.kicad_pro"
+      - "fab/**"
+      - "exports/**"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+
+  # ---------------------------------------------------------------------------
+  # Gate 0: validate manifest before doing anything else
+  # ---------------------------------------------------------------------------
+  validate-manifest:
+    name: Validate manifest
+    runs-on: ubuntu-latest
+    outputs:
+      manifest_valid: ${{ steps.validate.outputs.valid }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pcb-spec
+        run: pip install git+https://github.com/arananet/pcb-spec.git
+
+      - name: Validate manifest schema and consistency
+        id: validate
+        run: |
+          pcb-spec validate manifest.yaml --strict
+          echo "valid=true" >> "$GITHUB_OUTPUT"
+
+  # ---------------------------------------------------------------------------
+  # Generate KiCad exports (netlist, gerbers, drills, BOM, P&P)
+  # Uses the official KiCad CLI in a container so CI is reproducible.
+  # Requires KiCad 8.0. For KiCad 7.0 flag differences, see docs/KICAD_EXPORT.md.
+  # ---------------------------------------------------------------------------
+  kicad-export:
+    name: KiCad CLI export
+    runs-on: ubuntu-latest
+    needs: validate-manifest
+    container:
+      image: kicad/kicad:8.0
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate schematic netlist
+        run: |
+          mkdir -p exports
+          kicad-cli sch export netlist \
+            --format kicadsexpr \
+            --output exports/schematic.net \
+            *.kicad_sch
+
+      - name: Generate BOM
+        run: |
+          kicad-cli sch export bom \
+            --output exports/bom.csv \
+            *.kicad_sch
+
+      - name: Generate Gerbers
+        run: |
+          mkdir -p fab/gerbers fab/drills
+          kicad-cli pcb export gerbers \
+            --output fab/gerbers/ \
+            *.kicad_pcb
+
+      - name: Generate drill files
+        run: |
+          kicad-cli pcb export drill \
+            --output fab/drills/ \
+            *.kicad_pcb
+
+      - name: Generate pick-and-place
+        run: |
+          kicad-cli pcb export pos \
+            --format csv \
+            --output fab/pick-and-place.csv \
+            *.kicad_pcb
+
+      - name: Upload exports as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kicad-exports
+          path: |
+            exports/
+            fab/
+
+  # ---------------------------------------------------------------------------
+  # Gate 1: schematic conformance
+  # ---------------------------------------------------------------------------
+  schematic-gate:
+    name: Schematic gate
+    runs-on: ubuntu-latest
+    needs: kicad-export
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pcb-spec
+        run: pip install git+https://github.com/arananet/pcb-spec.git
+
+      - name: Download exports
+        uses: actions/download-artifact@v4
+        with:
+          name: kicad-exports
+
+      - name: Run schematic gate
+        run: |
+          pcb-spec check schematic \
+            manifest.yaml \
+            exports/schematic.net \
+            --report schematic-report.json \
+            --format markdown > schematic-report.md
+
+      - name: Upload schematic report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schematic-report
+          path: |
+            schematic-report.json
+            schematic-report.md
+
+  # ---------------------------------------------------------------------------
+  # Gate 2: layout conformance
+  # ---------------------------------------------------------------------------
+  layout-gate:
+    name: Layout gate
+    runs-on: ubuntu-latest
+    needs: schematic-gate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pcb-spec
+        run: pip install git+https://github.com/arananet/pcb-spec.git
+
+      - name: Run layout gate
+        run: |
+          pcb-spec check layout \
+            manifest.yaml \
+            *.kicad_pcb \
+            --report layout-report.json \
+            --format markdown > layout-report.md
+
+      - name: Upload layout report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: layout-report
+          path: |
+            layout-report.json
+            layout-report.md
+
+  # ---------------------------------------------------------------------------
+  # Gate 3: DFM conformance against fab capability sheet
+  # ---------------------------------------------------------------------------
+  dfm-gate:
+    name: DFM gate
+    runs-on: ubuntu-latest
+    needs: layout-gate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pcb-spec
+        run: pip install git+https://github.com/arananet/pcb-spec.git
+
+      - name: Download exports
+        uses: actions/download-artifact@v4
+        with:
+          name: kicad-exports
+
+      - name: Run DFM gate
+        run: |
+          pcb-spec check dfm \
+            manifest.yaml \
+            fab/ \
+            --report dfm-report.json \
+            --format markdown > dfm-report.md
+
+      - name: Upload DFM report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dfm-report
+          path: |
+            dfm-report.json
+            dfm-report.md
+
+  # ---------------------------------------------------------------------------
+  # PR comment with consolidated gate report
+  # ---------------------------------------------------------------------------
+  pr-comment:
+    name: Post gate report to PR
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && always()
+    needs: [schematic-gate, layout-gate, dfm-gate]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all reports
+        uses: actions/download-artifact@v4
+        with:
+          path: reports/
+
+      - name: Assemble consolidated report
+        id: report
+        run: |
+          echo "## pcb-spec gate report" > consolidated.md
+          echo "" >> consolidated.md
+          echo "### Schematic gate" >> consolidated.md
+          cat reports/schematic-report/schematic-report.md >> consolidated.md || echo "_not run_" >> consolidated.md
+          echo "" >> consolidated.md
+          echo "### Layout gate" >> consolidated.md
+          cat reports/layout-report/layout-report.md >> consolidated.md || echo "_not run_" >> consolidated.md
+          echo "" >> consolidated.md
+          echo "### DFM gate" >> consolidated.md
+          cat reports/dfm-report/dfm-report.md >> consolidated.md || echo "_not run_" >> consolidated.md
+
+      - name: Comment on PR
+        # If your org restricts third-party actions, replace this with:
+        # gh pr comment ${{ github.event.pull_request.number }} --body-file consolidated.md
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: consolidated.md
+          header: pcb-spec-report
+
+  # ---------------------------------------------------------------------------
+  # Release: attach fab files to GitHub release if all gates pass on a tag
+  # ---------------------------------------------------------------------------
+  release-fab:
+    name: Attach fab files to release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: dfm-gate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download exports
+        uses: actions/download-artifact@v4
+        with:
+          name: kicad-exports
+
+      - name: Package fab bundle
+        run: |
+          cd fab
+          zip -r ../fab-bundle-${{ github.ref_name }}.zip .
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: fab-bundle-${{ github.ref_name }}.zip

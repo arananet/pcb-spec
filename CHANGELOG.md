@@ -24,6 +24,7 @@ Guidelines:
 - Auto-generated schema reference at `docs/manifest-schema.md`
 - Three validated example manifests: `minimal-2layer`, `4layer-mixed-signal`, `controlled-impedance`
 - Full test suite in `tests/test_schema.py` (17 tests, all passing)
+- Board repo templates in `templates/board-repo/`: `AGENTS.md` agent contract, `pcb-spec.yml` three-gate CI pipeline (validate → KiCad export → schematic/layout/DFM gates → PR comment → release fab bundle), `KICAD_EXPORT.md` manual and headless export procedure
 
 ### Changed
 -
