@@ -1,272 +1,90 @@
-# {{PROJECT_NAME}}
+# pcb-spec
 
-{{BADGES}}
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Spec-driven](https://img.shields.io/badge/spec--driven-OpenSpec-blue)](#what-is-openspec)
+[![Status: experimental](https://img.shields.io/badge/status-experimental-orange)]()
+![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
+![OpenSpec](https://img.shields.io/badge/OpenSpec-enforced-blueviolet)
 
-{{PROJECT_DESCRIPTION}}
+Spec-driven PCB design. The constraint manifest is the source of truth. Schematic and board are derivative artifacts that must conform.
 
----
+`pcb-spec` is an experiment in applying spec-driven development to PCB design. A YAML manifest captures stackup, rule tables, net classes, placement intent, and conformance gates. A schema validator and conformance checker enforce the spec deterministically. A rule translator emits native EDA syntax (KiCad first). LLMs can author and review the manifest, but every numeric value comes from a tool call or a cited standard, never from a model's prior. The goal is reproducible, auditable PCB design where AI assistance is constrained to what it actually does well: text-to-text translation, classification, and review.
+
+## Why this exists
+
+Ask a general-purpose LLM for a 2A trace width on 1oz copper and you might get 12 mil, 30 mil, or a confident paragraph that violates IPC-2152 by a factor of two. The model is generating plausible text. Plausible text is not an engineering deliverable.
+
+Retrieval augmented generation does not fix this. RAG retrieves similar content. PCB design needs exact rule satisfaction. Those are different problems.
+
+The fix is structural, not a better prompt:
+
+1. A structured manifest the model can read but cannot author from memory
+2. Tool calls (impedance, current capacity, via thermal models) for anything computed
+3. A conformance gate that compares artifacts to the manifest and does not negotiate
+
+The model becomes the authoring and review interface. The trust comes from the engine underneath.
+
+## The schematic-vs-board split
+
+A PCB project is two artifacts pretending to be one.
+
+**Schematic** is a logical and topological problem. Wrong pin assignment, missing decoupling, wrong feedback divider. Failures are about correctness of intent.
+
+**Board** is a geometric and physical problem. Trace too narrow for current, impedance miss, return path discontinuity, via stub resonance. Failures are about geometry and physics.
+
+`pcb-spec` treats them as separate phases with separate gates, joined by the manifest as a contract.
+
+## What's in the box
+
+| Component | Role |
+| --- | --- |
+| **Manifest schema** | Canonical YAML schema (stackup, rules, net classes, placement, gates) |
+| **Standards rule library** | IPC-2152, IPC-2221, common fab DFM minimums as bundled data |
+| **Schema validator** | `pcb-spec validate` — schema + internal consistency checks |
+| **Conformance checker** | Walks netlist + manifest, runs schematic-phase gates |
+| **EDA rule translator** | Emits native syntax (KiCad `.kicad_dru` first) |
+| **Calculator tools** | Wadell impedance, IPC-2152 current capacity, via thermal — wired up as LLM tools |
+| **LLM integration** | Authoring assistant, review assistant, DRC explainer |
+| **Reference projects** | Real boards from the author's bench, used as test fixtures |
 
 ## What is OpenSpec?
 
-OpenSpec is a spec-driven development framework built into this repo. Every feature or bugfix starts with a spec file — no spec, no code. Specs define acceptance criteria, test plans, and the domain skill to use during implementation.
+This repo uses OpenSpec for spec-driven development. Every feature starts with a spec file in `.openspec/specs/`. No spec, no code. Specs define acceptance criteria, test plans, and the implementation skill to use.
 
-**Layers of enforcement:**
-
-| Layer | When | What |
-|---|---|---|
-| Git hook (local) | `git commit` | Blocks commits with source changes but no spec |
-| Pre-commit framework (optional) | `git commit` | Runs gitleaks, yamllint, markdownlint, shellcheck |
-| CI — deterministic | Every PR | Validates spec fields, status, test_plan, and runs the test suite |
-| CI — agentic | Every PR | AI checks if the implementation actually satisfies the spec |
-| CI — security | Every PR | CodeQL SAST, gitleaks secret scan, dependency review |
-| CI — supply chain | Every release | CycloneDX SBOM generation |
-
----
-
-## How it works
-
-```mermaid
-flowchart TD
-    A([New feature or bugfix]) --> B{Spec exists?}
-    B -- No --> C["/openspec-scaffold\nor: gh openspec scaffold"]
-    C --> D[Fill in acceptance_criteria\nand test_plan]
-    D --> E{status = review?}
-    B -- Yes --> E
-    E -- draft --> D
-    E -- review/approved --> F["/openspec-implement\ninvokes domain skill if set"]
-    F --> G[Write tests per test_plan]
-    G --> H([Open PR])
-    H --> I[spec-check.yml\ndeterministic gate]
-    H --> J[spec-ai-review.yml\nagentic alignment check]
-    I --> K{All checks pass?}
-    J --> K
-    K -- No --> F
-    K -- Yes --> L([Merge])
-```
-
----
-
-## Quick start
-
-### 1. Configure this repo
-
-Open it in [Claude Code](https://claude.ai/code) — it detects the unconfigured state and interviews you automatically.
-
-Or configure manually:
-
-```bash
-# Edit the five required fields
-vi .openspec/config.yaml
-
-# Install git hooks
-bash setup.sh
-```
-
-### 2. Set your personal defaults (optional)
-
-Fill in `.openspec/defaults.yaml` once — onboarding will skip questions you've already answered:
-
-```yaml
-owner: "your-github-org"
-team: "your-team"
-test_command: "npm test"
-default_implementation_skill: "frontend-pro"  # or backend-pro, devops-pro, etc.
-```
-
-### 3. Create your first spec
-
-```bash
-gh openspec scaffold "my first feature"
-# or in Claude Code:
-/openspec-scaffold my first feature
-```
-
-### 4. Implement with the right domain skill
-
-```bash
-# In Claude Code — reads the spec, invokes implementation_skill if set
-/openspec-implement my-first-feature
-```
-
-### 5. Validate before pushing
-
-```bash
-gh openspec check           # validate all specs
-gh openspec check --strict  # treat warnings as errors
-gh openspec check --pr 42   # check a specific PR
-```
-
----
-
-## Claude Code skills
-
-Three project skills are available in any Claude Code session:
-
-| Skill | What it does |
-|---|---|
-| `/openspec-scaffold [feature]` | Guided spec creation — reads defaults, scaffolds file, validates required fields |
-| `/openspec-implement [slug]` | Reads spec, checks status, invokes domain skill, implements + writes tests |
-| `/openspec-check` | Validates spec coverage for current staged changes |
-
----
+See `.openspec/specs/` for active specs. The roadmap of planned specs lives in [`docs/specs-roadmap.md`](docs/specs-roadmap.md).
 
 ## Project structure
 
 ```
-.openspec/
-├── config.yaml              # Project configuration and enforcement settings
-├── defaults.yaml            # Personal/team defaults (fill in once)
-├── onboarding.yaml          # Questions Claude Code asks during first-time setup
-├── specs/                   # Active spec files (one per feature/bugfix)
-│   └── example-feature.spec.yaml
-└── templates/
-    ├── feature.spec.yaml    # Includes optional eval_plan for AI-backed features
-    └── bugfix.spec.yaml
-
-.harness/                    # Eval harness — proves specs under controlled conditions
-├── scenarios/               # Declarative eval scenarios (agent tasks, prompt runs)
-│   └── example.scenario.yaml
-├── evaluators/              # Rubrics and scripts that score scenario runs
-├── mocks/                   # Mock tools, APIs, and data sources
-└── traces/                  # Captured execution traces (gitignored by default)
-
-.github/
-├── workflows/
-│   ├── spec-check.yml           # Deterministic CI gate + test runner
-│   ├── spec-ai-review.yml       # Agentic semantic review
-│   ├── spec-bootstrap.yml       # First-push setup reminder
-│   ├── repo-init.yml            # Creates `main` branch on new repos from template
-│   ├── codeql.yml               # Static analysis (SAST)
-│   ├── secret-scan.yml          # Gitleaks secret scanning
-│   ├── dependency-review.yml    # Vulnerable / disallowed-license deps
-│   ├── sbom.yml                 # CycloneDX SBOM on release
-│   ├── labeler.yml              # Path-based PR labels
-│   ├── release-drafter.yml      # Auto-drafted release notes
-│   └── stale.yml                # Stale issue/PR bot
-├── ISSUE_TEMPLATE/
-│   ├── bug_report.yml
-│   ├── feature_request.yml
-│   ├── spec_question.yml
-│   └── config.yml
-├── agents/
-│   └── spec-review.md           # AI agent goal file
-├── CODEOWNERS                   # Ownership matrix
-├── FUNDING.yml                  # Sponsor links
-├── AGENTS.md                    # Instructions for AI agents
-├── copilot-instructions.md      # GitHub Copilot instructions
-├── dependabot.yml               # Weekly dependency updates
-├── labeler.yml                  # Rules for path-based labelling
-├── pull_request_template.md     # Structured PR template
-└── release-drafter.yml          # Release-notes grouping config
-
-.claude/
-├── commands/
-│   ├── openspec-scaffold.md
-│   ├── openspec-implement.md
-│   └── openspec-check.md
-├── hooks/
-│   └── require-spec-on-commit.sh
-└── settings.json
-
+.openspec/specs/        # Active spec files (one per feature)
+src/pcb_spec/           # Python package
+  schema/               # Manifest schema definition
+  validator/            # Schema validator
+  conformance/          # Netlist parser + gate runner
+  emit/                 # EDA rule translators (kicad/, altium/, allegro/)
+  calc/                 # Impedance, current capacity, via thermal calculators
+  llm/                  # Authoring/review/explain assistants
+data/                   # Bundled rule libraries (IPC, fab DFM)
+examples/               # Reference projects with manifests
 docs/
-├── adr/                         # Architecture Decision Records
-│   └── 0001-record-architecture-decisions.md
-└── BRANCH_PROTECTION.md         # Recommended ruleset configuration
-
-Governance (repo root):
-├── SECURITY.md                  # Vulnerability disclosure policy
-├── CONTRIBUTING.md              # Contribution guide (spec-first)
-├── CODE_OF_CONDUCT.md           # Contributor Covenant v2.1
-├── SUPPORT.md                   # Support channels
-├── CHANGELOG.md                 # Keep-a-Changelog
-├── .gitignore                   # Multi-language defaults
-├── .gitattributes               # Line endings + linguist hints
-├── .editorconfig                # Editor formatting rules
-├── .pre-commit-config.yaml      # Optional pre-commit hooks
-└── .yamllint                    # YAML lint rules
+  adr/                  # Architecture decisions
+  specs-roadmap.md      # Planned specs and dependencies
 ```
 
-## Governance
+## Status
 
-| File | Purpose |
-|---|---|
-| [SECURITY.md](SECURITY.md) | Report a vulnerability privately |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute — spec-first |
-| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Contributor Covenant v2.1 |
-| [SUPPORT.md](SUPPORT.md) | Where to get help |
-| [CHANGELOG.md](CHANGELOG.md) | Release history |
-| [.github/CODEOWNERS](.github/CODEOWNERS) | Ownership matrix |
-| [docs/BRANCH_PROTECTION.md](docs/BRANCH_PROTECTION.md) | Recommended GitHub rulesets |
+Experimental. The schema is at v0.1. The first reference project is in progress. Article and experiment writeup pending real fab results.
 
----
+## Coding guidelines
 
-## Spec file format
+Karpathy-inspired principles enforced through OpenSpec: think before coding, simplicity first, surgical changes, goal-driven execution. See `CLAUDE.md`.
 
-See `.openspec/specs/example-feature.spec.yaml` for a fully filled-in reference.
+## License
 
-Required fields: `title`, `description`, `acceptance_criteria`, `test_plan`, `status`
-
-Status lifecycle: `draft` → `review` → `approved`
-
-> Code can only be written when status is `review` or `approved`.
-
----
-
-## OpenSpec vs Harness
-
-OpenSpec defines **what should be true.**
-Tests and harnesses prove **whether it is true.**
-
-For normal software, this means unit, integration, and end-to-end tests — captured in each spec's `test_plan`.
-
-For AI systems, verification often requires more:
-
-| Concern | Tool |
-|---|---|
-| Functional correctness | Unit / integration tests (`test_plan`) |
-| Agent task success | Eval scenarios (`.harness/scenarios/`) |
-| Grounding and citation accuracy | Evaluators (`.harness/evaluators/`) |
-| Tool use correctness | Mocked tool runs (`.harness/mocks/`) |
-| Latency and cost budgets | Scenario `thresholds` + `metrics` |
-| Safety and refusal behavior | Scenario `expected` + evaluator rubrics |
-| Reproducible regression baselines | Captured traces (`.harness/traces/`) |
-
-When a spec involves an AI-backed component, add an `eval_plan` block — it links the spec to the harness scenarios that prove it:
-
-```yaml
-eval_plan:
-  scenarios:
-    - ".harness/scenarios/my-agent-task.scenario.yaml"
-  metrics:
-    - task_success
-    - groundedness
-    - tool_accuracy
-    - refusal_accuracy
-```
-
-The spec says *what* must be validated. The harness says *how* that validation is executed.
-
----
-
-## Coding Guidelines
-
-This project follows the [Karpathy-Inspired Coding Guidelines](https://github.com/forrestchang/andrej-karpathy-skills) — four principles derived from [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) on common LLM coding pitfalls:
-
-| Principle | What it addresses |
-|---|---|
-| **Think Before Coding** | Wrong assumptions, hidden confusion, missing tradeoffs |
-| **Simplicity First** | Overcomplication, bloated abstractions |
-| **Surgical Changes** | Orthogonal edits, touching code you shouldn't |
-| **Goal-Driven Execution** | Leverage through tests-first, verifiable success criteria |
-
-These guidelines are integrated into [`CLAUDE.md`](CLAUDE.md) and work alongside OpenSpec — Principle 4 (Goal-Driven Execution) is structurally enforced through spec `acceptance_criteria` and `test_plan` fields.
+MIT. See [LICENSE](LICENSE).
 
 ---
 
 **Developer:** Eduardo Arana
-
-**License:** [MIT](LICENSE)
-
----
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/H2H51MPWG)

@@ -1,4 +1,4 @@
-# AI Agent Instructions — {{PROJECT_NAME}}
+# AI Agent Instructions — pcb-spec
 
 This project uses **OpenSpec** for spec-driven development.
 Every feature must have a spec file before code is written.
