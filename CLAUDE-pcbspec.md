@@ -67,14 +67,15 @@ The order is:
 1. `manifest-schema` ✓ implemented
 2. `rule-engine-contract` — Rule, Violation, FactBase types + resolution logic.
    Blocks everything from step 3 onward. Do not implement the conformance
-   checker, kicad-rule-emitter, or any LLM spec without this merged.
-3. `standards-rule-library` and `bom-library-format` (data, parallel — now
-   know the entry shape the engine expects)
+   checker, kicad-rule-emitter, or the skill without this merged.
+3. `standards-rule-library` and `bom-library-format` (data, parallel)
 4. `schema-validator` (first runnable CLI)
 5. `impedance-calculator` and `current-capacity-calculator` (parallel)
 6. `kicad-netlist-parser` then `conformance-checker`
 7. `kicad-rule-emitter`
-8. `llm-*` specs
+8. `pcb-spec-skill` — single spec replacing the four retired `llm-*` specs.
+   Covers `.claude/skills/pcb-spec/`, supporting docs, and cheatsheets.
+   Architecture: CLI + Skill, no MCP. See `CLAUDE-implementation.md`.
 9. `reference-projects` and `experiment-metrics`
 
 When the user asks for spec N, verify all dependencies are in `status:
@@ -177,10 +178,6 @@ src/pcb_spec/
     impedance.py      # microstrip(), stripline(), diff_microstrip()
     current.py        # ipc_2152_width(current, copper_oz, layer, temp_rise)
     via.py            # via_current_capacity(drill, plating, length)
-  llm/
-    prompts/          # system prompt templates as text files
-    tools.py          # tool-call wrappers around calc/
-    review.py         # review assistant
   utils/
     cite.py           # Citation parsing/validation
     units.py          # mil/mm conversions, never use bare numbers
@@ -217,8 +214,22 @@ docs/
   specs-roadmap.md
   manifest-schema.md  # auto-generated
   rule-engine.md      # auto-generated from engine.py docstrings
+  report-schema.md    # CLI output schema, treated as public API
   adr/
     001-rule-engine-contract.md  # why predicates-in-code, four-source resolution
+
+.claude/
+  skills/
+    pcb-spec/
+      SKILL.md                    # entry point: what the toolchain is, typical workflow
+      manifest-authoring.md       # how to draft a manifest from prose + datasheets
+      gate-failure-explainer.md   # how to read JSON reports, propose fixes
+      kicad-export.md             # exact kicad-cli commands for each artifact
+      dru-translation.md          # how to read a manifest and emit .kicad_dru
+      examples/                   # worked examples for skill consumers
+      cheatsheets/
+        ipc-2152-quick-ref.md     # current capacity tables with citations
+        jlcpcb-dfm.md             # JLCPCB capability sheet excerpts
 ```
 
 When a spec's deliverables list a file path, that path is authoritative.
@@ -255,33 +266,39 @@ class of error this project is trying to prevent in LLM-generated designs.
 
 ---
 
-## 8. LLM-related specs (phase 5)
+## 8. The `pcb-spec-skill` spec (phase 5)
 
-When implementing the `llm-*` specs, two extra rules apply:
+The four earlier `llm-*` specs (`llm-system-prompt`, `llm-authoring-assistant`,
+`llm-review-assistant`, `llm-drc-explainer`) are retired. They are replaced by a
+single `pcb-spec-skill` spec that covers the entire `.claude/skills/pcb-spec/`
+folder. The separation of concerns that was spread across four specs is now
+handled at the file level within the skill folder.
 
-**The model under test is not you.** When writing the system prompt and
-tool definitions, remember the goal is to constrain a future model
-instance. Do not write prompts that work because you specifically know
-the project. Write prompts that would work for any capable model loaded
-fresh.
+When implementing `pcb-spec-skill`, three extra rules apply:
 
-**Eval scenarios are the spec for AI behavior.** A spec like
-`llm-authoring-assistant` has an `eval_plan` block pointing to harness
-scenarios. The implementation is not done until those scenarios pass at
-the threshold defined in the spec. "It seems to work in one chat" is not
-acceptance. The harness run is.
+**The skill teaches; it does not contain logic.** Resist the urge to embed
+Python code, decision trees, or heuristics in the markdown files. The skill is
+instructions for Claude on how to use the CLI. The CLI does the work. If a step
+seems to require logic, that logic belongs in the Python package, not the skill.
 
-For each AI-backed spec, the order is:
+**The model under test is not you.** Write skill files that work for any capable
+model loaded fresh, not for you specifically because you know the project. Every
+instruction should be self-contained and unambiguous.
+
+**Eval scenarios are the spec for AI behavior.** The `pcb-spec-skill` spec has
+an `eval_plan` block pointing to harness scenarios in `.harness/scenarios/`. The
+implementation is not done until those scenarios pass at the threshold defined in
+the spec. "It seems to work in one chat" is not acceptance. The harness run is.
+
+For the skill spec, the order is:
 
 1. Write the harness scenarios first (in `.harness/scenarios/`)
-2. Run them against a baseline (no system prompt, just a generic
-   instruction) to get a failure baseline
-3. Implement the system prompt and tool integration
+2. Run them against a baseline (no skill loaded) to get a failure baseline
+3. Implement SKILL.md and supporting files
 4. Run scenarios again, confirm they pass
 5. Capture the trace for regression baseline
 
-This is identical to TDD, just at the eval layer instead of the unit-test
-layer.
+This is TDD at the eval layer instead of the unit-test layer.
 
 ---
 

@@ -45,7 +45,7 @@ A PCB project is two artifacts pretending to be one.
 | **Conformance checker** | Walks netlist + manifest, runs schematic-phase gates | planned |
 | **EDA rule translator** | Emits native syntax (KiCad `.kicad_dru` first) | planned |
 | **Calculator tools** | Wadell impedance, IPC-2152 current capacity, via thermal | planned |
-| **LLM integration** | Authoring assistant, review assistant, DRC explainer | planned |
+| **Claude Skill** | `.claude/skills/pcb-spec/` — teaches Claude to operate the toolchain; replaces llm-* specs | planned |
 | **Reference projects** | Real boards from the author's bench, used as test fixtures | planned |
 
 ## Using pcb-spec in a board repo
@@ -103,10 +103,18 @@ src/pcb_spec/           # Python package
   conformance/          # Netlist parser + gate runner
   emit/                 # EDA rule translators (kicad/ first)
   calc/                 # Impedance, current capacity, via thermal calculators
-  llm/                  # Authoring/review/explain assistants
 data/                   # Bundled rule libraries (IPC, fab DFM)
 examples/               # Reference manifests (minimal-2layer, 4layer-mixed-signal,
                         #   controlled-impedance)
+.claude/
+  skills/
+    pcb-spec/           # Claude Skill: teaches Claude to operate the toolchain
+      SKILL.md          # Entry point
+      manifest-authoring.md
+      gate-failure-explainer.md
+      kicad-export.md
+      dru-translation.md
+      cheatsheets/      # IPC-2152 and fab DFM lookup tables with citations
 templates/
   board-repo/           # Drop-in files for a KiCad board repo using pcb-spec
     AGENTS.md           # Agent contract for the board repo
@@ -118,11 +126,12 @@ docs/
   adr/                  # Architecture decisions
   specs-roadmap.md      # Full spec dependency graph and build order
   manifest-schema.md    # Auto-generated schema reference
+  report-schema.md      # CLI JSON output schema (public API)
 ```
 
 ## Status
 
-Experimental. `manifest-schema` is implemented and tested. `rule-engine-contract` is drafted. Everything else is planned — see [`docs/specs-roadmap.md`](docs/specs-roadmap.md) for the build order and dependencies.
+Experimental. `manifest-schema` is implemented and tested. `rule-engine-contract` and `pcb-spec-skill` are drafted. Everything else is planned — see [`docs/specs-roadmap.md`](docs/specs-roadmap.md) for the build order and dependencies. Architecture: CLI + Claude Skill, no MCP.
 
 ## Coding guidelines
 

@@ -139,7 +139,7 @@ The `kicad-cli` flag names changed between 7.0 and 8.0. On 7.0:
 
 - `sch export netlist` → same, but `--format` accepts `kicad` (no `sexpr` suffix)
 - `pcb export gerbers` → `pcb export gerber` (singular)
-- `pcb export pos` → `pcb export footprint-positions`
+- `pcb export pos` → same (`pos` is the command in both 7.0 and 8.0)
 
 Run `kicad-cli <subcommand> --help` to confirm flag names for your
 installed version before running headless exports.

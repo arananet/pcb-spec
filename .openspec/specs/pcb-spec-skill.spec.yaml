@@ -1,0 +1,116 @@
+title: "pcb-spec Claude Skill"
+description: |
+  Define and implement the Claude Skill at .claude/skills/pcb-spec/ that teaches
+  Claude how to operate the pcb-spec toolchain. This spec replaces the four retired
+  llm-* specs (llm-system-prompt, llm-authoring-assistant, llm-review-assistant,
+  llm-drc-explainer) with a single coherent skill folder.
+
+  Architecture: CLI + Skill, no MCP. The skill is instructions; all logic stays in
+  the Python package. The skill teaches Claude how to use the CLI, how to author
+  manifests, how to read gate failure reports, and how to explain DRC failures.
+
+  The skill is loaded into a Claude Code session via .claude/skills/. It does not
+  contain code, decision trees, or heuristics. Every numeric value in the skill files
+  is a lookup from cited tables, never from model memory.
+
+status: review
+
+owner: arananet
+team: pcb-spec
+implementation_skill: null
+
+acceptance_criteria:
+  - "SKILL.md exists at .claude/skills/pcb-spec/SKILL.md and describes: what pcb-spec is in one paragraph, the four-step typical workflow (author manifest → validate → generate KiCad exports → run gates), when to load each supporting file, and hard rules (no numeric values from memory, every value cited, refuse to answer trace-width questions unless a calculator tool is available)."
+  - "manifest-authoring.md covers: how to draft a manifest from prose intent plus datasheets, the full schema reference (all five sections: stackup, rules, net_classes, placement, gates), citation requirements, common authoring mistakes, and the validate-then-fix loop."
+  - "gate-failure-explainer.md covers: how to read the JSON report from pcb-spec check, how to identify which gate fired, how to distinguish manifest errors from design errors, and how to propose fixes the human can apply in KiCad. Includes worked examples of ERROR and WARNING violations."
+  - "kicad-export.md contains the exact kicad-cli commands for each required artifact (schematic netlist, BOM, Gerbers, drill files, pick-and-place), with troubleshooting guidance for common errors. Commands match those in templates/board-repo/docs/KICAD_EXPORT.md."
+  - "dru-translation.md explains how to read a manifest (net_classes, rules sections) and understand what .kicad_dru syntax pcb-spec emit kicad produces. For explaining layout-time enforcement to the user; not for generating DRU syntax manually."
+  - "cheatsheets/ipc-2152-quick-ref.md contains IPC-2152 current capacity reference data (external and internal trace widths vs. current vs. copper weight vs. temperature rise) with citations to IPC-2152 standard clauses. Data is a lookup table, not prose interpretation."
+  - "cheatsheets/jlcpcb-dfm.md contains JLCPCB standard PCB capability minimums (trace width/spacing, min drill, board thickness, etc.) with citations to the JLCPCB published capability sheet. Data is a lookup table."
+  - "No skill file contains Python code, shell scripts, or executable logic of any kind."
+  - "No skill file contains numeric values without an inline citation (standard clause or fab capability sheet URL/section)."
+  - "Harness scenarios in .harness/scenarios/pcb-spec-skill/ pass at ≥80% on three scenario categories: manifest authoring without hallucination, gate failure interpretation, and kicad-cli workflow orchestration."
+
+test_plan:
+  unit_tests:
+    - "Structural check: all seven required files exist (.claude/skills/pcb-spec/SKILL.md, manifest-authoring.md, gate-failure-explainer.md, kicad-export.md, dru-translation.md, cheatsheets/ipc-2152-quick-ref.md, cheatsheets/jlcpcb-dfm.md)."
+    - "Citation check: a script scans all cheatsheet files and confirms every numeric entry has an inline citation field. Any entry without a citation is a test failure."
+    - "No-code check: a script scans all skill files for Python def/class/import keywords and shell heredocs; presence of any is a test failure."
+    - "SKILL.md references each of the four supporting file names exactly once in the 'when to load' section."
+
+  integration_tests:
+    - "End-to-end authoring scenario (harness): given a prose description of a 2-layer USB device board, Claude loaded with the skill produces a manifest YAML that passes pcb-spec validate without hallucinated numeric values."
+    - "Gate failure scenario (harness): given the JSON output of a pcb-spec check run with two ERROR violations, Claude loaded with the skill correctly identifies both gate IDs, distinguishes which is a manifest error vs. a design error, and proposes a concrete fix for each."
+    - "kicad-cli orchestration scenario (harness): Claude loaded with the skill produces the correct kicad-cli command sequence to export all three artifacts (netlist, Gerbers, drill files) for a given board file path, without making up flag names."
+    - "Hallucination refusal scenario (harness): asked 'what trace width do I need for 2A on 1oz copper?', Claude loaded with the skill declines to answer from memory and instead explains how to use pcb-spec's current-capacity-calculator."
+
+  out_of_scope_for_this_spec:
+    - "The Python CLI itself (those are in earlier specs)"
+    - "Harness infrastructure setup (that is a separate tooling concern)"
+    - "Altium or other EDA tool support in skill files"
+    - "Automatic manifest generation without user input"
+    - "Any MCP integration"
+
+eval_plan:
+  harness_dir: ".harness/scenarios/pcb-spec-skill/"
+  pass_threshold: 0.80
+  scenarios:
+    - id: "manifest-authoring-no-hallucination"
+      description: "Claude drafts a valid manifest from prose board description without inventing numeric values."
+      metric: "manifest passes pcb-spec validate AND all numeric fields have citations"
+    - id: "gate-failure-interpretation"
+      description: "Claude reads a gate failure JSON report and correctly identifies gate IDs, error types, and proposed fixes."
+      metric: "gate IDs correctly identified, error type classification correct, proposed fix is actionable"
+    - id: "kicad-cli-orchestration"
+      description: "Claude produces correct kicad-cli commands for a given export task."
+      metric: "all flag names valid, output paths match expected layout, no invented flags"
+    - id: "hallucination-refusal"
+      description: "Claude declines to answer numeric PCB design questions from memory."
+      metric: "response does not contain a numeric answer; response refers user to calculator tool or spec"
+
+dependencies:
+  - manifest-schema
+  - rule-engine-contract
+  - standards-rule-library
+  - bom-library-format
+  - schema-validator
+  - impedance-calculator
+  - current-capacity-calculator
+  - kicad-netlist-parser
+  - conformance-checker
+  - kicad-rule-emitter
+
+deliverables:
+  - ".claude/skills/pcb-spec/SKILL.md"
+  - ".claude/skills/pcb-spec/manifest-authoring.md"
+  - ".claude/skills/pcb-spec/gate-failure-explainer.md"
+  - ".claude/skills/pcb-spec/kicad-export.md"
+  - ".claude/skills/pcb-spec/dru-translation.md"
+  - ".claude/skills/pcb-spec/cheatsheets/ipc-2152-quick-ref.md"
+  - ".claude/skills/pcb-spec/cheatsheets/jlcpcb-dfm.md"
+  - ".harness/scenarios/pcb-spec-skill/ (harness scenario files)"
+  - "tests/test_skill_structure.py (structural and citation checks)"
+
+notes: |
+  This spec consolidates the four retired llm-* specs. The separation of concerns
+  is now at the file level: manifest-authoring.md replaces llm-authoring-assistant,
+  gate-failure-explainer.md replaces llm-drc-explainer, and SKILL.md plus
+  kicad-export.md together replace llm-system-prompt. There is no direct replacement
+  for llm-review-assistant — that judgment-flavored review belongs in the skill's
+  SKILL.md as a workflow note rather than a separate spec.
+
+  The 80% harness threshold is intentional. The cheatsheets provide lookup data;
+  the model is expected to use them correctly. A model that hallucinates values when
+  cheatsheet data is available is a skill authoring failure, not an AI capability
+  limitation.
+
+  Citation discipline: every numeric value in ipc-2152-quick-ref.md must cite a
+  specific IPC-2152 clause (e.g. "IPC-2152 Table 5-1, external conductor, 1oz,
+  10°C rise"). Every value in jlcpcb-dfm.md must cite the JLCPCB standard PCB
+  capability sheet with the date the sheet was accessed. PRs that add data without
+  citations fail review.
+
+  The skill does not implement gates or parse files. If a user asks Claude to
+  do something the CLI does, the answer is a CLI invocation, not skill-embedded
+  logic. This boundary must be maintained or the skill becomes a maintenance burden
+  that drifts from the CLI.
