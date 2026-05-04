@@ -38,9 +38,7 @@ jobs:
         # Delete languages that don't apply. CodeQL-supported languages:
         # cpp, csharp, go, java-kotlin, javascript-typescript, python, ruby, swift
         language:
-          - javascript-typescript
           - python
-          - go
 
     steps:
       - name: Checkout
