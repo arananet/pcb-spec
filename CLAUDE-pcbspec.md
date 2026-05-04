@@ -107,7 +107,11 @@ For each spec, the loop is:
    be demonstrably true. If a criterion is ambiguous, raise it with the
    user before guessing.
 8. Update `CHANGELOG.md` under "Unreleased".
-9. Open a PR that links the spec file in the description.
+9. Update `README.md` — always. At minimum: reflect the new component's status
+   in the component table, update the project structure if new modules were
+   added, and update the status paragraph. No implementation commit ships
+   without a README update.
+10. Open a PR that links the spec file in the description.
 
 The `out_of_scope_for_this_spec` block in `test_plan` is real. Do not
 implement things listed there, even if they would be nice. They belong to
