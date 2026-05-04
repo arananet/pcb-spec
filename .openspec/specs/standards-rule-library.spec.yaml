@@ -69,7 +69,8 @@ notes: |
   current-capacity-calculator spec. This file is the data contract between the
   library and the calculator.
 
-  JLCPCB's capability page blocks automated fetching. Values in jlcpcb.yaml that
-  were not verifiable from the primary source (https://jlcpcb.com/capabilities/pcb-capabilities)
-  are marked with TODO comments and must be filled in by a human with access to
-  the official page before the data file is used in production gates.
+  JLCPCB's capability page blocks automated fetching. All capability values in
+  jlcpcb.yaml have been populated and set verified: true after human review of
+  https://jlcpcb.com/capabilities/pcb-capabilities on 2026-05-04. Additional fields
+  beyond the original spec (silkscreen, soldermask bridge, via diameter, impedance
+  tolerance, V-cut clearance) were added from the same source.

@@ -131,3 +131,28 @@ def test_fab_files_each_capability_has_citation():
                 assert "citation" in val, (
                     f"{fname}: capabilities.{key} missing citation field"
                 )
+
+
+def test_jlcpcb_core_capabilities_are_verified():
+    # AC: JLCPCB values sourced from capabilities page are populated and marked verified
+    data = yaml.safe_load((FAB / "jlcpcb.yaml").read_text())
+    caps = data["capabilities"]
+    scalar_caps = [
+        "min_trace_width_mm", "min_trace_spacing_mm", "min_drill_mm",
+        "min_annular_ring_mm", "min_copper_to_edge_mm",
+    ]
+    for key in scalar_caps:
+        entry = caps[key]
+        assert entry["verified"] is True, f"jlcpcb.yaml: {key} not verified"
+        assert entry["value"] is not None, f"jlcpcb.yaml: {key} value is null"
+        assert isinstance(entry["value"], (int, float)), f"jlcpcb.yaml: {key} value not numeric"
+    # list-valued capabilities
+    assert caps["board_thickness_mm"]["verified"] is True
+    assert len(caps["board_thickness_mm"]["values"]) > 0
+    assert caps["layer_counts"]["verified"] is True
+    assert len(caps["layer_counts"]["values"]) > 0
+    assert caps["surface_finishes"]["verified"] is True
+    assert len(caps["surface_finishes"]["values"]) >= 3
+    assert caps["copper_weights_oz"]["verified"] is True
+    assert len(caps["copper_weights_oz"]["outer"]) > 0
+    assert len(caps["copper_weights_oz"]["inner"]) > 0
