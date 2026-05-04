@@ -45,10 +45,33 @@ A PCB project is two artifacts pretending to be one.
 | **Conformance checker** | Walks netlist + manifest, runs schematic-phase gates | planned |
 | **EDA rule translator** | Emits native syntax (KiCad `.kicad_dru` first) | planned |
 | **Calculator tools** | Wadell impedance, IPC-2152 current capacity, via thermal | planned |
-| **LLM integration** | Authoring assistant, review assistant, DRC explainer | planned |
+| **Claude Skill** | `.claude/skills/pcb-spec/` — teaches Claude to operate the toolchain; replaces llm-* specs | planned |
 | **Reference projects** | Real boards from the author's bench, used as test fixtures | planned |
 
-## Getting started
+## Using pcb-spec in a board repo
+
+`pcb-spec` is a CI auditor for KiCad projects. Copy the files in
+[`templates/board-repo/`](templates/board-repo/) into your hardware repo
+to wire up the three-gate pipeline:
+
+```
+your-board-repo/
+  AGENTS.md                          # agent contract for this repo
+  manifest.yaml                      # your board's constraint manifest
+  .github/workflows/pcb-spec.yml     # CI pipeline
+  docs/KICAD_EXPORT.md               # manual export procedure
+```
+
+The pipeline runs on every PR: validates the manifest, exports KiCad
+artifacts via `kicad-cli`, then runs three gates in sequence —
+schematic, layout, DFM. Gate failures block the merge. The gate report
+posts as a sticky PR comment. On a version tag, the Gerber bundle attaches
+to the GitHub release.
+
+See [`templates/board-repo/`](templates/board-repo/) for the full files
+with inline documentation.
+
+## Getting started (developing pcb-spec itself)
 
 ```bash
 git clone https://github.com/arananet/pcb-spec.git
@@ -80,19 +103,35 @@ src/pcb_spec/           # Python package
   conformance/          # Netlist parser + gate runner
   emit/                 # EDA rule translators (kicad/ first)
   calc/                 # Impedance, current capacity, via thermal calculators
-  llm/                  # Authoring/review/explain assistants
 data/                   # Bundled rule libraries (IPC, fab DFM)
 examples/               # Reference manifests (minimal-2layer, 4layer-mixed-signal,
                         #   controlled-impedance)
+.claude/
+  skills/
+    pcb-spec/           # Claude Skill: teaches Claude to operate the toolchain
+      SKILL.md          # Entry point
+      manifest-authoring.md
+      gate-failure-explainer.md
+      kicad-export.md
+      dru-translation.md
+      cheatsheets/      # IPC-2152 and fab DFM lookup tables with citations
+templates/
+  board-repo/           # Drop-in files for a KiCad board repo using pcb-spec
+    AGENTS.md           # Agent contract for the board repo
+    .github/workflows/
+      pcb-spec.yml      # Three-gate CI pipeline
+    docs/
+      KICAD_EXPORT.md   # Manual and headless export procedure
 docs/
   adr/                  # Architecture decisions
   specs-roadmap.md      # Full spec dependency graph and build order
   manifest-schema.md    # Auto-generated schema reference
+  report-schema.md      # CLI JSON output schema (public API)
 ```
 
 ## Status
 
-Experimental. `manifest-schema` is implemented and tested. `rule-engine-contract` is drafted. Everything else is planned — see [`docs/specs-roadmap.md`](docs/specs-roadmap.md) for the build order and dependencies.
+Experimental. `manifest-schema` is implemented and tested. `rule-engine-contract` and `pcb-spec-skill` are drafted. Everything else is planned — see [`docs/specs-roadmap.md`](docs/specs-roadmap.md) for the build order and dependencies. Architecture: CLI + Claude Skill, no MCP.
 
 ## Coding guidelines
 

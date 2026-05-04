@@ -135,50 +135,38 @@ blocking the experiment; on the roadmap for later.
 
 ---
 
-## Phase 5: LLM integration
+## Phase 5: Claude Skill
 
-### 11. `llm-system-prompt`
+### 11. `pcb-spec-skill`
 
-**Dependencies:** all of phases 0-2
+**Dependencies:** all of phases 0-4
 
-Structured system prompt template that loads the manifest, the standards
-rule library, the BOM library, and the calculator tool definitions.
-Establishes the model's role as authoring/review/translation, never numeric
-generation. Includes refusal patterns for "what trace width" questions
-that aren't backed by a tool call.
+**Replaces:** `llm-system-prompt`, `llm-authoring-assistant`, `llm-review-assistant`,
+`llm-drc-explainer` (all retired)
 
-Has an `eval_plan` block — this is the first AI-backed spec, so it links
-to harness scenarios.
+The Claude Skill at `.claude/skills/pcb-spec/` that teaches Claude how to operate
+the toolchain. Architecture: CLI + Skill, no MCP. The skill is instructions for
+Claude; all logic stays in the Python package.
 
-### 12. `llm-authoring-assistant`
+**Deliverables:**
 
-**Dependencies:** `llm-system-prompt`, `schema-validator`
+- `SKILL.md` — entry point: what the project is, typical four-step workflow,
+  when to load each supporting file, hard rules (no numeric values from memory)
+- `manifest-authoring.md` — how to draft a manifest from prose intent plus
+  datasheets. Schema reference, citation requirements, common mistakes,
+  validation loop.
+- `gate-failure-explainer.md` — how to read the JSON report from `pcb-spec check`,
+  identify which gate fired, distinguish manifest errors from design errors,
+  propose fixes the human can apply in KiCad.
+- `kicad-export.md` — exact `kicad-cli` commands for each artifact, with
+  troubleshooting for common errors.
+- `dru-translation.md` — how to read a manifest and emit `.kicad_dru` syntax.
+  Reference for explaining what rules KiCad will enforce.
+- `cheatsheets/ipc-2152-quick-ref.md` — current capacity tables with citations
+- `cheatsheets/jlcpcb-dfm.md` — JLCPCB capability sheet excerpts
 
-Conversational interface: user describes a board in prose, model produces
-draft manifest YAML, schema validator runs automatically, model reports
-gaps for the user to resolve. The model never commits a manifest that
-fails validation.
-
-`eval_plan` includes scenarios for: hallucinated trace width refusal,
-missing-citation rejection, multi-turn manifest refinement.
-
-### 13. `llm-review-assistant`
-
-**Dependencies:** `llm-system-prompt`, `conformance-checker`
-
-Reads a netlist plus manifest, summarizes the design in plain language,
-flags risks the gates don't catch but a senior engineer would notice
-(asymmetric decoupling, missing TVS on USB, sketchy thermal relief
-patterns). Judgment-flavored review, explicitly distinguished from
-deterministic validation.
-
-### 14. `llm-drc-explainer`
-
-**Dependencies:** `llm-system-prompt`, `kicad-rule-emitter`
-
-Reads KiCad DRC output, maps each violation back to the manifest gate
-that should have prevented it, suggests whether the manifest needs
-tightening or the layout needs fixing.
+Has an `eval_plan` block pointing to harness scenarios in `.harness/scenarios/`.
+The implementation is not done until those scenarios pass at the defined threshold.
 
 ---
 
@@ -208,12 +196,12 @@ article followup with real numbers.
 1. `manifest-schema` ✓ implemented
 2. `rule-engine-contract` — types, resolution logic, ADR. One session. Unblocks everything.
 3. `standards-rule-library` + `bom-library-format` (data, parallel — now know the entry shape)
-4. `schema-validator` (one afternoon, unblocks LLM authoring path)
+4. `schema-validator` (one afternoon, first runnable CLI)
 5. `impedance-calculator` + `current-capacity-calculator` (parallel)
 6. `kicad-netlist-parser` → `conformance-checker`
 7. `kicad-rule-emitter`
-8. `llm-*` specs (lighter than they look once the engine underneath works)
-9. `reference-projects` + `experiment-metrics` in parallel from phase 5 onward
+8. `pcb-spec-skill` — single spec, replaces the four retired `llm-*` specs
+9. `reference-projects` + `experiment-metrics` (parallel)
 
 The whole MVP is a few weekends of focused work. The experiment can start
 running as soon as phases 0-3 are in place.

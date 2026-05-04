@@ -24,6 +24,10 @@ Guidelines:
 - Auto-generated schema reference at `docs/manifest-schema.md`
 - Three validated example manifests: `minimal-2layer`, `4layer-mixed-signal`, `controlled-impedance`
 - Full test suite in `tests/test_schema.py` (17 tests, all passing)
+- Board repo templates in `templates/board-repo/`: `AGENTS.md` agent contract, `pcb-spec.yml` three-gate CI pipeline (validate → KiCad export → schematic/layout/DFM gates → PR comment → release fab bundle), `KICAD_EXPORT.md` manual and headless export procedure
+- `CLAUDE-implementation.md` architectural decision document: CLI + Skill (no MCP), final repo layout, CLI surface, skill structure, build order
+- `rule-engine-contract` spec drafted: Rule/Violation/FactBase types, four-source resolution order, evaluation model
+- `pcb-spec-skill` spec drafted: single spec replacing retired `llm-system-prompt`, `llm-authoring-assistant`, `llm-review-assistant`, `llm-drc-explainer`
 
 ### Changed
 -
