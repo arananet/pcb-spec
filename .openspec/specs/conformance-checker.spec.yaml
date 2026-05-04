@@ -1,0 +1,64 @@
+title: "Conformance Checker v0.1"
+description: |
+  Implement `src/pcb_spec/conformance/gates.py` and wire up the
+  `pcb-spec check <manifest> <netlist>` CLI subcommand.
+
+  The conformance checker takes a validated manifest and a parsed KiCad
+  netlist, then runs a set of schematic-phase gate predicates and returns
+  a list of Violations (using the rule engine contract from engine.py).
+
+  v0.1 gate predicates (schematic phase only):
+    NET_CLASS_MEMBER_NOT_IN_NETLIST
+      Every net name listed in a net_class.members array must appear as a
+      net name in the netlist. Missing nets are violations.
+    PLACEMENT_COMPONENT_NOT_IN_NETLIST
+      Every component_id in manifest.placement must appear as a component
+      ref in the netlist. Missing components are violations.
+
+  The CLI prints a Markdown summary to stdout (PASS / FAIL + violation list)
+  and exits 0 on pass, 1 on any violation. Optional --report writes a JSON
+  file using the same schema as the validate command (schema_version, status,
+  manifest_path, errors).
+
+status: review
+owner: arananet
+team: pcb-spec
+implementation_skill: null
+
+acceptance_criteria:
+  - "`src/pcb_spec/conformance/gates.py` exports `run_schematic_gates(manifest, netlist) -> list[Violation]`."
+  - "Every net name in `manifest.net_classes[*].members` that is absent from `netlist.net_names()` produces a Violation with rule_id='NET_CLASS_MEMBER_NOT_IN_NETLIST', severity=ERROR, and net_name set to the missing net."
+  - "Every component_id in `manifest.placement` that is absent from `netlist.component_refs()` produces a Violation with rule_id='PLACEMENT_COMPONENT_NOT_IN_NETLIST', severity=ERROR, and component_id set to the missing ref."
+  - "When all members and placement components are present, `run_schematic_gates` returns an empty list."
+  - "CLI `pcb-spec check <manifest> <netlist>` exits 0 and prints 'PASS' when there are no violations. Exits 1 and prints 'FAIL' with a violation list when there are violations."
+  - "CLI with `--report <path>` writes a JSON report matching the report schema (schema_version='0.1', status, manifest_path, errors list with code/message/location)."
+
+test_plan:
+  unit_tests:
+    - "run_schematic_gates returns [] for the controlled-impedance manifest + a matching netlist fixture."
+    - "run_schematic_gates returns a Violation with rule_id NET_CLASS_MEMBER_NOT_IN_NETLIST when a net_class member is absent from the netlist."
+    - "run_schematic_gates returns a Violation with rule_id PLACEMENT_COMPONENT_NOT_IN_NETLIST when a placement component is absent from the netlist."
+    - "Violations have non-empty net_name / component_id fields respectively."
+
+  integration_tests:
+    - "CLI `python3 -m pcb_spec check <controlled-impedance manifest> <matching netlist>` exits 0 and stdout contains 'PASS'."
+    - "CLI against mismatched netlist exits 1 and stdout contains 'FAIL'."
+    - "CLI with --report writes valid JSON with schema_version='0.1'."
+
+  out_of_scope_for_this_spec:
+    - "Layout-phase gates (trace width checks, impedance verification)"
+    - "DFM gates (fab capability checks)"
+    - "BOM cross-reference checks"
+    - "Netlist-to-schematic pin assignment verification"
+
+dependencies:
+  - kicad-netlist-parser
+  - rule-engine-contract
+  - schema-validator
+
+deliverables:
+  - "src/pcb_spec/conformance/gates.py"
+  - "tests/fixtures/netlists/controlled_impedance_match.net"
+  - "tests/fixtures/netlists/missing_net.net"
+  - "tests/fixtures/netlists/missing_component.net"
+  - "tests/test_conformance.py"

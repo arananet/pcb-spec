@@ -39,6 +39,55 @@ def _cmd_validate(args: argparse.Namespace) -> int:
     return 0 if result.status == "pass" else 1
 
 
+def _cmd_check(args: argparse.Namespace) -> int:
+    from pcb_spec.conformance.gates import run_schematic_gates
+    from pcb_spec.conformance.netlist_parser import parse_kicad_netlist
+    from pcb_spec.schema import load_manifest
+
+    try:
+        manifest = load_manifest(args.manifest)
+    except Exception as exc:
+        print(f"Error loading manifest: {exc}", file=sys.stderr)
+        return 1
+
+    try:
+        netlist = parse_kicad_netlist(args.netlist)
+    except Exception as exc:
+        print(f"Error loading netlist: {exc}", file=sys.stderr)
+        return 1
+
+    violations = run_schematic_gates(manifest, netlist)
+
+    if not violations:
+        print(f"## PASS: {args.manifest}\n\nNo conformance violations found.")
+        status = "pass"
+    else:
+        lines = [f"## FAIL: {args.manifest}", ""]
+        for v in violations:
+            lines.append(f"- **{v.rule_id}** ({v.net_name or v.component_id or ''}): {v.message}")
+        print("\n".join(lines))
+        status = "fail"
+
+    if args.report:
+        import json
+        report = {
+            "schema_version": "0.1",
+            "status": status,
+            "manifest_path": args.manifest,
+            "errors": [
+                {
+                    "code": v.rule_id,
+                    "message": v.message,
+                    "location": v.net_name or v.component_id or "",
+                }
+                for v in violations
+            ],
+        }
+        Path(args.report).write_text(json.dumps(report, indent=2))
+
+    return 0 if status == "pass" else 1
+
+
 def _cmd_calc_impedance(args: argparse.Namespace) -> int:
     from pcb_spec.calc.impedance import microstrip_impedance, stripline_impedance
     try:
@@ -68,6 +117,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="pcb-spec", description="PCB spec toolchain")
     sub = parser.add_subparsers(dest="command", required=True)
 
+    # check subcommand
+    chk = sub.add_parser("check", help="Run conformance gates against a KiCad netlist")
+    chk.add_argument("manifest", help="Path to the manifest YAML file")
+    chk.add_argument("netlist", help="Path to the KiCad .net netlist file")
+    chk.add_argument("--report", metavar="PATH", help="Write JSON report to PATH")
+
     # validate subcommand
     val = sub.add_parser("validate", help="Validate a manifest YAML file")
     val.add_argument("manifest", help="Path to the manifest YAML file")
@@ -96,7 +151,9 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    if args.command == "validate":
+    if args.command == "check":
+        sys.exit(_cmd_check(args))
+    elif args.command == "validate":
         sys.exit(_cmd_validate(args))
     elif args.command == "calc":
         if args.calc_cmd == "impedance":

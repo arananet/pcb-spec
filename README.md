@@ -42,7 +42,7 @@ A PCB project is two artifacts pretending to be one.
 | **Rule engine contract** | Rule/Violation/FactBase types, four-source resolution order, evaluation model | implemented |
 | **Standards rule library** | IPC-2152, IPC-2221, common fab DFM minimums as bundled data | implemented (JLCPCB values need manual verification) |
 | **Schema validator** | `pcb-spec validate` — schema + internal consistency checks | implemented |
-| **Conformance checker** | Walks netlist + manifest, runs schematic-phase gates | planned |
+| **Conformance checker** | Walks netlist + manifest, runs schematic-phase gates | implemented |
 | **EDA rule translator** | Emits native syntax (KiCad `.kicad_dru` first) | planned |
 | **Calculator tools** | Wadell impedance, IPC-2221B current capacity | implemented |
 | **Claude Skill** | `.claude/skills/pcb-spec/` — teaches Claude to operate the toolchain; replaces llm-* specs | planned |
@@ -131,7 +131,7 @@ docs/
 
 ## Status
 
-Experimental. `manifest-schema`, `rule-engine-contract`, `standards-rule-library`, `bom-library-format`, `schema-validator`, `impedance-calculator`, and `current-capacity-calculator` are implemented (104 tests, all passing). `pcb-spec-skill` is drafted. Everything else is planned — see [`docs/specs-roadmap.md`](docs/specs-roadmap.md) for the build order and dependencies. Architecture: CLI + Claude Skill, no MCP.
+Experimental. `manifest-schema`, `rule-engine-contract`, `standards-rule-library`, `bom-library-format`, `schema-validator`, `impedance-calculator`, `current-capacity-calculator`, `kicad-netlist-parser`, and `conformance-checker` are implemented (124 tests, all passing). `pcb-spec-skill` is drafted. Everything else is planned — see [`docs/specs-roadmap.md`](docs/specs-roadmap.md) for the build order and dependencies. Architecture: CLI + Claude Skill, no MCP.
 
 ### Reference sources
 
