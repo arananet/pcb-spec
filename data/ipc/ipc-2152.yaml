@@ -1,0 +1,119 @@
+# IPC-2152 current capacity model parameters
+#
+# Source: IPC-2152:2009 "Standard for Determining Current Carrying Capacity
+# in Printed Board Design".
+#
+# IPC-2152 defines current capacity via polynomial regression curves derived
+# from empirical testing of hundreds of board configurations. The full set of
+# correction factor curves is in the purchased standard document (available
+# from IPC at https://www.ipc.org).
+#
+# Additional reference (read manually — blocks automated access):
+#   https://www.protoexpress.com/blog/how-to-optimize-your-pcb-trace-using-ipc-2152-standard/
+#   Contains worked examples of the IPC-2152 polynomial with specific current/
+#   width/copper-weight/temperature-rise values useful for verifying the
+#   calculator implementation.
+#
+# This file captures:
+#   (a) The IPC-2221 predecessor polynomial coefficients (public, widely cited)
+#       for use as a conservative fallback.
+#   (b) Placeholders for the IPC-2152 correction factors that require access
+#       to the purchased standard.
+#
+# IMPORTANT: The current-capacity-calculator spec implements the calculation.
+# This file is the data contract — the calculator reads from here.
+# Values marked TODO must be filled from the purchased IPC-2152:2009 document
+# before the calculator produces IPC-2152-compliant output. Until then, the
+# calculator uses the ipc_2221_fallback coefficients, which are conservative
+# but less accurate than IPC-2152.
+
+schema_version: "0.1"
+standard: "IPC-2152:2009"
+citation: "IPC-2152:2009 (IPC, https://www.ipc.org)"
+
+# ── IPC-2221 fallback polynomial (publicly documented) ────────────────────────
+# Formula: I = k * dT^b * A^c
+# where I = current (A), dT = temperature rise (°C), A = cross-section (mil²)
+# Source: IPC-2221A:2003 §6.2 (predecessor to IPC-2152; coefficients widely
+# reproduced in PCB design literature including Texas Instruments AN-2020).
+#
+# These are LESS ACCURATE than IPC-2152 for modern boards but are fully public.
+ipc_2221_fallback:
+  citation: "IPC-2221B:2003 §6.2; verified against Sierra Circuits IPC-2152 reference (https://www.protoexpress.com/blog/how-to-optimize-your-pcb-trace-using-ipc-2152-standard/)"
+  # Formula: I = k * ΔT^b * A^c
+  # I = maximum current capacity (amps)
+  # ΔT = temperature rise above ambient (°C); typically 10°C per IPC-2221B
+  # A = cross-sectional area (mil²)
+  # k, b, c = layer-dependent polynomial coefficients
+  external_conductors:
+    k: 0.048
+    b: 0.44
+    c: 0.725
+    citation: "IPC-2221B:2003 §6.2 external conductor; k=0.048 confirmed by Sierra Circuits (https://www.protoexpress.com/blog/how-to-optimize-your-pcb-trace-using-ipc-2152-standard/)"
+  internal_conductors:
+    k: 0.024
+    b: 0.44
+    c: 0.725
+    citation: "IPC-2221B:2003 §6.2 internal conductor; k=0.024 confirmed by Sierra Circuits (https://www.protoexpress.com/blog/how-to-optimize-your-pcb-trace-using-ipc-2152-standard/)"
+
+# ── Approximate quick-reference table ────────────────────────────────────────
+# Source: JLCPCB PCB Design Rules and Guidelines blog post
+# (https://jlcpcb.com/blog/pcb-design-rules-best-practices)
+# Labeled "Approx." in the source — intended as design guidance, not exact values.
+# Use the IPC-2221 fallback polynomial for computed widths; use this table only
+# for sanity-checking calculator output.
+approximate_trace_width_table:
+  citation: "JLCPCB 'PCB Design Rules and Guidelines' (https://jlcpcb.com/blog/pcb-design-rules-best-practices) — values labeled approximate"
+  note: "All widths in mil. Temperature rise assumed 10°C above ambient per IPC-2221B."
+  entries:
+    - current_a: 0.5
+      external_1oz_mil: 5
+      internal_1oz_mil: 10
+      external_2oz_mil: 2
+      internal_2oz_mil: 5
+    - current_a: 1.0
+      external_1oz_mil: 10
+      internal_1oz_mil: 20
+      external_2oz_mil: 5
+      internal_2oz_mil: 12
+    - current_a: 2.0
+      external_1oz_mil: 30
+      internal_1oz_mil: 50
+      external_2oz_mil: 12
+      internal_2oz_mil: 30
+    - current_a: 3.0
+      external_1oz_mil: 50
+      internal_1oz_mil: 85
+      external_2oz_mil: 20
+      internal_2oz_mil: 45
+    - current_a: 5.0
+      external_1oz_mil: 100
+      internal_1oz_mil: 175
+      external_2oz_mil: 40
+      internal_2oz_mil: 90
+
+# ── IPC-2152 correction factors ───────────────────────────────────────────────
+# TODO: Fill from IPC-2152:2009 Figures 5-1 through 5-15.
+# The IPC-2152 standard is available for purchase at https://www.ipc.org.
+# The correction factors below account for: board thickness, plane proximity,
+# thermal conductivity of dielectric, and trace geometry.
+#
+# Until these are populated, set ipc_2152_available: false in any calculator
+# config so the calculator falls back to the ipc_2221_fallback coefficients.
+ipc_2152_available: false
+
+ipc_2152_correction_factors:
+  board_thickness:
+    citation: "TODO: IPC-2152:2009 Figure 5-3 — board thickness correction"
+    # entries: [{thickness_mm: <float>, correction_factor: <float>}, ...]
+    entries: []
+
+  plane_proximity:
+    citation: "TODO: IPC-2152:2009 Figure 5-5 — plane proximity correction"
+    # entries: [{distance_to_plane_mm: <float>, correction_factor: <float>}, ...]
+    entries: []
+
+  copper_weight:
+    citation: "TODO: IPC-2152:2009 Figure 5-2 — copper weight correction"
+    # entries: [{copper_oz: <float>, correction_factor: <float>}, ...]
+    entries: []

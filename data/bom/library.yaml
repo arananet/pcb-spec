@@ -1,0 +1,299 @@
+# pcb-spec BOM component library — seed entries
+#
+# All values sourced from manufacturer datasheets cited per entry.
+# Rating field names always carry unit suffixes (_v, _a, _w, _ohm, _hz,
+# _f, _pf, _uf, _c, _mohm) — no bare numeric fields.
+#
+# id convention: FAMILY_VARIANT_PACKAGE (uppercase, underscores)
+# Ids are intentionally package-specific: the conformance checker uses the
+# id to verify footprint compatibility, not just electrical specs.
+
+schema_version: "0.1"
+
+components:
+
+  # ── Linear regulators ───────────────────────────────────────────────────────
+
+  - id: LM7805_TO220
+    manufacturer: "Texas Instruments"
+    mpn: "LM7805CT"
+    description: "5V 1.5A positive linear voltage regulator, TO-220-3"
+    package: "TO-220-3"
+    pin_count: 3
+    datasheet_url: "https://www.ti.com/lit/ds/symlink/lm7805.pdf"
+    ratings:
+      output_voltage_v: 5.0
+      max_input_voltage_v: 35.0
+      max_output_current_a: 1.5
+      dropout_voltage_v: 2.0
+      max_junction_temp_c: 150
+      power_rating_w: 15.0
+    notes: "Requires 0.1uF input and 0.33uF output bypass capacitors per datasheet §8.1"
+
+  - id: LM7805_TO92
+    manufacturer: "Texas Instruments"
+    mpn: "LM78L05ACZ"
+    description: "5V 100mA positive linear voltage regulator, TO-92-3"
+    package: "TO-92-3"
+    pin_count: 3
+    datasheet_url: "https://www.ti.com/lit/ds/symlink/lm78l05.pdf"
+    ratings:
+      output_voltage_v: 5.0
+      max_input_voltage_v: 30.0
+      max_output_current_a: 0.1
+      dropout_voltage_v: 1.7
+      max_junction_temp_c: 125
+      power_rating_w: 0.4
+
+  - id: AMS1117_3V3_SOT223
+    manufacturer: "Advanced Monolithic Systems / multiple"
+    mpn: "AMS1117-3.3"
+    description: "3.3V 1A LDO voltage regulator, SOT-223-3"
+    package: "SOT-223-3"
+    pin_count: 3
+    datasheet_url: "https://www.advanced-monolithic.com/pdf/ds1117.pdf"
+    ratings:
+      output_voltage_v: 3.3
+      max_input_voltage_v: 15.0
+      max_output_current_a: 1.0
+      dropout_voltage_v: 1.3
+      max_junction_temp_c: 125
+      power_rating_w: 1.0
+    notes: "Requires 10uF output capacitor for stability per datasheet §3"
+
+  - id: AMS1117_5V0_SOT223
+    manufacturer: "Advanced Monolithic Systems / multiple"
+    mpn: "AMS1117-5.0"
+    description: "5V 1A LDO voltage regulator, SOT-223-3"
+    package: "SOT-223-3"
+    pin_count: 3
+    datasheet_url: "https://www.advanced-monolithic.com/pdf/ds1117.pdf"
+    ratings:
+      output_voltage_v: 5.0
+      max_input_voltage_v: 15.0
+      max_output_current_a: 1.0
+      dropout_voltage_v: 1.3
+      max_junction_temp_c: 125
+      power_rating_w: 1.0
+
+  # ── Discrete semiconductors ─────────────────────────────────────────────────
+
+  - id: 2N3904_TO92
+    manufacturer: "ON Semiconductor / multiple"
+    mpn: "2N3904"
+    description: "NPN general-purpose transistor, TO-92-3"
+    package: "TO-92-3"
+    pin_count: 3
+    datasheet_url: "https://www.onsemi.com/pdf/datasheet/2n3904-d.pdf"
+    ratings:
+      max_collector_voltage_v: 40
+      max_collector_current_a: 0.2
+      max_base_current_a: 0.005
+      hfe_min_ratio: 100
+      hfe_max_ratio: 300
+      max_junction_temp_c: 150
+      power_rating_w: 0.625
+
+  - id: BAT43_SOD123
+    manufacturer: "STMicroelectronics"
+    mpn: "BAT43FILM"
+    description: "Schottky barrier diode 30V 200mA, SOD-123"
+    package: "SOD-123"
+    pin_count: 2
+    datasheet_url: "https://www.st.com/resource/en/datasheet/bat43.pdf"
+    ratings:
+      max_reverse_voltage_v: 30
+      max_forward_current_a: 0.2
+      forward_voltage_v: 0.25
+      max_junction_temp_c: 125
+
+  # ── Microcontrollers ────────────────────────────────────────────────────────
+
+  - id: STM32F103C8_LQFP48
+    manufacturer: "STMicroelectronics"
+    mpn: "STM32F103C8T6"
+    description: "ARM Cortex-M3 MCU 64KB flash 72MHz, LQFP-48"
+    package: "LQFP-48"
+    pin_count: 48
+    datasheet_url: "https://www.st.com/resource/en/datasheet/stm32f103c8.pdf"
+    ratings:
+      supply_voltage_min_v: 2.0
+      supply_voltage_max_v: 3.6
+      max_io_current_a: 0.025
+      max_total_io_current_a: 0.150
+      max_junction_temp_c: 85
+      flash_kb: 64
+      ram_kb: 20
+      max_frequency_mhz: 72
+    notes: "Requires 100nF decoupling on each VDD pin and 10uF bulk per datasheet §3.8"
+
+  - id: ATMEGA328P_TQFP32
+    manufacturer: "Microchip Technology"
+    mpn: "ATmega328P-AU"
+    description: "AVR 8-bit MCU 32KB flash 20MHz, TQFP-32"
+    package: "TQFP-32"
+    pin_count: 32
+    datasheet_url: "https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-7810-Automotive-Microcontrollers-ATmega328P_Datasheet.pdf"
+    ratings:
+      supply_voltage_min_v: 1.8
+      supply_voltage_max_v: 5.5
+      max_io_current_a: 0.04
+      max_total_io_current_a: 0.2
+      max_junction_temp_c: 85
+      flash_kb: 32
+      ram_kb: 2
+      max_frequency_mhz: 20
+
+  # ── Connectors ──────────────────────────────────────────────────────────────
+
+  - id: USB_C_GX_USB3_C_CON
+    manufacturer: "GCT (Global Connector Technology)"
+    mpn: "USB4085-GF-A"
+    description: "USB Type-C receptacle, 24-pin, mid-mount, SMD"
+    package: "SMD-24"
+    pin_count: 24
+    datasheet_url: "https://gct.co/files/drawings/usb4085.pdf"
+    ratings:
+      max_current_a: 5.0
+      max_voltage_v: 20.0
+      rated_mating_cycles: 10000
+    notes: "CC resistors (5.1kΩ to GND) required on CC1 and CC2 for UFP-only (device) role per USB-C spec §4.5.2.3.1"
+
+  - id: USB_MICRO_B_MOLEX_47346
+    manufacturer: "Molex"
+    mpn: "47346-0001"
+    description: "USB Micro-B receptacle, 5-pin, SMD, right-angle"
+    package: "SMD-5"
+    pin_count: 5
+    datasheet_url: "https://www.molex.com/content/dam/molex/molex-dot-com/products/automated/en-us/salesdrawingpdf/473/473460/4734600001_sd.pdf"
+    ratings:
+      max_current_a: 1.8
+      max_voltage_v: 30.0
+      rated_mating_cycles: 10000
+
+  # ── Oscillators / crystals ──────────────────────────────────────────────────
+
+  - id: XTAL_8MHZ_HC49S
+    manufacturer: "Abracon / multiple"
+    mpn: "ABLS-8.000MHZ-B4Y-T"
+    description: "8MHz fundamental mode crystal, HC-49/S through-hole"
+    package: "HC-49S"
+    pin_count: 2
+    datasheet_url: "https://abracon.com/Resonators/ABLS.pdf"
+    ratings:
+      frequency_mhz: 8.0
+      frequency_tolerance_ppm: 30
+      load_capacitance_pf: 18
+      esr_max_ohm: 50
+      operating_temp_min_c: -20
+      operating_temp_max_c: 70
+    notes: "Load capacitors sized per crystal datasheet; verify with MCU's oscillator input capacitance. Typical: 2 × (CL − Cstray) where Cstray ≈ 3–5pF."
+
+  - id: XTAL_16MHZ_HC49S
+    manufacturer: "Abracon / multiple"
+    mpn: "ABLS-16.000MHZ-B4Y-T"
+    description: "16MHz fundamental mode crystal, HC-49/S through-hole"
+    package: "HC-49S"
+    pin_count: 2
+    datasheet_url: "https://abracon.com/Resonators/ABLS.pdf"
+    ratings:
+      frequency_mhz: 16.0
+      frequency_tolerance_ppm: 30
+      load_capacitance_pf: 18
+      esr_max_ohm: 30
+      operating_temp_min_c: -20
+      operating_temp_max_c: 70
+
+  # ── Passive families ────────────────────────────────────────────────────────
+  # One entry per package family. The conformance checker verifies package
+  # compliance, not specific component values.
+
+  - id: RESISTOR_0402
+    manufacturer: "multiple"
+    mpn: "generic-0402"
+    description: "Thick/thin film resistor, 0402 (1005 metric) package family"
+    package: "0402"
+    pin_count: 2
+    datasheet_url: "https://www.vishay.com/docs/20035/dcrcwe3.pdf"
+    ratings:
+      power_rating_w: 0.0625
+      max_voltage_v: 50
+      max_temp_c: 155
+    notes: "Generic entry. Specific value/tolerance per schematic BOM. Power rating from Vishay CRCW0402 datasheet; verify for chosen manufacturer."
+
+  - id: RESISTOR_0603
+    manufacturer: "multiple"
+    mpn: "generic-0603"
+    description: "Thick/thin film resistor, 0603 (1608 metric) package family"
+    package: "0603"
+    pin_count: 2
+    datasheet_url: "https://www.vishay.com/docs/20035/dcrcwe3.pdf"
+    ratings:
+      power_rating_w: 0.1
+      max_voltage_v: 75
+      max_temp_c: 155
+
+  - id: CAP_0402_X5R
+    manufacturer: "multiple"
+    mpn: "generic-0402-X5R"
+    description: "MLCC capacitor X5R dielectric, 0402 package family"
+    package: "0402"
+    pin_count: 2
+    datasheet_url: "https://search.murata.co.jp/Ceramy/image/img/A01X/G101/ENG/GRM155R60J105KE19-01.pdf"
+    ratings:
+      max_voltage_v: 6.3
+      max_temp_c: 85
+    notes: "Dielectric class X5R: -55C to +85C, ±15% capacitance change. Voltage derating applies — effective capacitance drops significantly at rated voltage. Verify with chosen part's derating curve."
+
+  - id: CAP_0402_X7R
+    manufacturer: "multiple"
+    mpn: "generic-0402-X7R"
+    description: "MLCC capacitor X7R dielectric, 0402 package family"
+    package: "0402"
+    pin_count: 2
+    datasheet_url: "https://search.murata.co.jp/Ceramy/image/img/A01X/G101/ENG/GRM155R71E104KA12-01.pdf"
+    ratings:
+      max_voltage_v: 25
+      max_temp_c: 125
+    notes: "Dielectric class X7R: -55C to +125C, ±15% capacitance change."
+
+  - id: CAP_0603_X7R
+    manufacturer: "multiple"
+    mpn: "generic-0603-X7R"
+    description: "MLCC capacitor X7R dielectric, 0603 package family"
+    package: "0603"
+    pin_count: 2
+    datasheet_url: "https://search.murata.co.jp/Ceramy/image/img/A01X/G101/ENG/GRM188R71H104KA93-01.pdf"
+    ratings:
+      max_voltage_v: 50
+      max_temp_c: 125
+    notes: "Dielectric class X7R: -55C to +125C, ±15% capacitance change."
+
+  # ── Signal integrity passives ────────────────────────────────────────────────
+
+  - id: FERRITE_BEAD_0402_600R
+    manufacturer: "Murata"
+    mpn: "BLM15AX601SN1D"
+    description: "Ferrite bead 600Ω at 100MHz, 0402, 500mA rated"
+    package: "0402"
+    pin_count: 2
+    datasheet_url: "https://www.murata.com/en-us/products/productdetail?partno=BLM15AX601SN1D"
+    ratings:
+      impedance_at_100mhz_ohm: 600
+      dc_resistance_max_mohm: 300
+      rated_current_a: 0.5
+      max_temp_c: 125
+    notes: "Impedance is frequency-dependent; 600Ω is nominal at 100MHz per BLM15AX601SN1D datasheet. Use SPICE model for signal integrity analysis."
+
+  - id: FERRITE_BEAD_0603_600R
+    manufacturer: "Murata"
+    mpn: "BLM18AG601SN1D"
+    description: "Ferrite bead 600Ω at 100MHz, 0603, 2A rated"
+    package: "0603"
+    pin_count: 2
+    datasheet_url: "https://www.murata.com/en-us/products/productdetail?partno=BLM18AG601SN1D"
+    ratings:
+      impedance_at_100mhz_ohm: 600
+      dc_resistance_max_mohm: 75
+      rated_current_a: 2.0
+      max_temp_c: 125

@@ -1,0 +1,96 @@
+# IPC-2221 voltage clearance table
+#
+# Source: IPC-2221B:2003 "Generic Standard on Printed Board Design",
+# Table 6-1 "Electrical Clearance for Printed Boards".
+#
+# These values define the minimum conductor spacing as a function of
+# peak working voltage and conductor environment (external uncoated,
+# external coated, or internal).
+#
+# IMPORTANT: These values are derived from widely-reproduced references
+# to IPC-2221B Table 6-1. Verify against the purchased standard document
+# (available from IPC at https://www.ipc.org/TOC/IPC-2221B.pdf) before
+# using in production sign-off gates.
+#
+# Voltage classes B1–B9 are defined in IPC-2221B §6.3.1.
+# "Coated" means conformal coating applied per IPC-A-610.
+# "External" means outer copper layers; "Internal" means inner layers
+# fully encapsulated in dielectric.
+
+schema_version: "0.1"
+standard: "IPC-2221B:2003"
+table: "Table 6-1 — Electrical Clearance"
+citation: "IPC-2221B:2003 Table 6-1 (IPC, https://www.ipc.org)"
+
+voltage_clearance_table:
+  - voltage_class: "B1"
+    min_voltage_v: 0
+    max_voltage_v: 15
+    clearance_external_uncoated_mm: 0.1
+    clearance_external_coated_mm: 0.1
+    clearance_internal_mm: 0.05
+    citation: "IPC-2221B:2003 Table 6-1 row B1"
+
+  - voltage_class: "B2"
+    min_voltage_v: 16
+    max_voltage_v: 30
+    clearance_external_uncoated_mm: 0.1
+    clearance_external_coated_mm: 0.1
+    clearance_internal_mm: 0.05
+    citation: "IPC-2221B:2003 Table 6-1 row B2"
+
+  - voltage_class: "B3"
+    min_voltage_v: 31
+    max_voltage_v: 50
+    clearance_external_uncoated_mm: 0.6
+    clearance_external_coated_mm: 0.3
+    clearance_internal_mm: 0.1
+    citation: "IPC-2221B:2003 Table 6-1 row B3"
+
+  - voltage_class: "B4"
+    min_voltage_v: 51
+    max_voltage_v: 100
+    clearance_external_uncoated_mm: 0.6
+    clearance_external_coated_mm: 0.3
+    clearance_internal_mm: 0.1
+    citation: "IPC-2221B:2003 Table 6-1 row B4"
+
+  - voltage_class: "B5"
+    min_voltage_v: 101
+    max_voltage_v: 150
+    clearance_external_uncoated_mm: 0.6
+    clearance_external_coated_mm: 0.3
+    clearance_internal_mm: 0.2
+    citation: "IPC-2221B:2003 Table 6-1 row B5"
+
+  - voltage_class: "B6"
+    min_voltage_v: 151
+    max_voltage_v: 170
+    clearance_external_uncoated_mm: 1.25
+    clearance_external_coated_mm: 0.4
+    clearance_internal_mm: 0.2
+    citation: "IPC-2221B:2003 Table 6-1 row B6"
+
+  - voltage_class: "B7"
+    min_voltage_v: 171
+    max_voltage_v: 250
+    clearance_external_uncoated_mm: 1.25
+    clearance_external_coated_mm: 0.4
+    clearance_internal_mm: 0.2
+    citation: "IPC-2221B:2003 Table 6-1 row B7"
+
+  - voltage_class: "B8"
+    min_voltage_v: 251
+    max_voltage_v: 300
+    clearance_external_uncoated_mm: 2.5
+    clearance_external_coated_mm: 0.8
+    clearance_internal_mm: 0.4
+    citation: "IPC-2221B:2003 Table 6-1 row B8"
+
+  - voltage_class: "B9"
+    min_voltage_v: 301
+    max_voltage_v: 500
+    clearance_external_uncoated_mm: 2.5
+    clearance_external_coated_mm: 0.8
+    clearance_internal_mm: 0.8
+    citation: "IPC-2221B:2003 Table 6-1 row B9"

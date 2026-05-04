@@ -1,0 +1,97 @@
+# JLCPCB Standard PCB capability matrix
+#
+# Primary sources (access manually in a browser — both block automated fetching):
+#   Capabilities page: https://jlcpcb.com/capabilities/pcb-capabilities
+#   Design rules blog: https://jlcpcb.com/blog/pcb-design-rules-best-practices
+#
+# IMPORTANT: JLCPCB's pages block automated fetching. Values below are marked
+# verified: false until a human has confirmed each value against the primary
+# sources above. Do NOT use unverified values in production sign-off gates —
+# the conformance checker must skip FAB_DFM gates when verified: false.
+#
+# To verify: open both URLs in a browser, cross-check each field below,
+# set verified: true, fill in the value, and update last_verified to today's date.
+
+schema_version: "0.1"
+fab_id: "jlcpcb"
+fab_name: "JLCPCB"
+capability_sheet_url: "https://jlcpcb.com/capabilities/pcb-capabilities"
+design_rules_blog_url: "https://jlcpcb.com/blog/pcb-design-rules-best-practices"
+last_verified: null  # TODO: set to ISO date when a human verifies against official pages above
+
+capabilities:
+  # Trace geometry
+  # TODO: verify all trace values at https://jlcpcb.com/capabilities/pcb-capabilities
+  min_trace_width_mm:
+    value: null
+    verified: false
+    citation: "TODO: JLCPCB Standard PCB Capabilities — Minimum Trace Width"
+    notes: "Commonly cited as 0.127mm (5mil) for 2-layer 1oz; 0.1mm (4mil) for 4-layer. Verify on official page."
+
+  min_trace_spacing_mm:
+    value: null
+    verified: false
+    citation: "TODO: JLCPCB Standard PCB Capabilities — Minimum Trace Spacing"
+    notes: "Commonly cited as 0.127mm (5mil) for 2-layer 1oz; 0.1mm (4mil) for 4-layer. Verify on official page."
+
+  # Drill / via
+  min_drill_mm:
+    value: null
+    verified: false
+    citation: "TODO: JLCPCB Standard PCB Capabilities — Minimum Drill Hole Size"
+    notes: "Commonly cited as 0.2mm standard (0.15mm with surcharge). Verify on official page."
+
+  min_annular_ring_mm:
+    value: null
+    verified: false
+    citation: "TODO: JLCPCB Standard PCB Capabilities — Minimum Annular Ring"
+    notes: "Commonly cited as 0.1mm. Verify on official page."
+
+  # Board dimensions
+  max_board_mm:
+    width: null
+    height: null
+    verified: false
+    citation: "TODO: JLCPCB Standard PCB Capabilities — Maximum Board Dimensions"
+    notes: "Commonly cited as 400mm × 500mm. Verify on official page."
+
+  min_board_mm:
+    width: null
+    height: null
+    verified: false
+    citation: "TODO: JLCPCB Standard PCB Capabilities — Minimum Board Dimensions"
+    notes: "Commonly cited as 3mm × 3mm. Verify on official page."
+
+  # Stackup options
+  board_thickness_mm:
+    values: []
+    verified: false
+    citation: "TODO: JLCPCB Standard PCB Capabilities — Board Thickness"
+    notes: "Commonly cited as [0.4, 0.6, 0.8, 1.0, 1.2, 1.6, 2.0]. Verify on official page."
+
+  copper_weights_oz:
+    outer: []
+    inner: []
+    verified: false
+    citation: "TODO: JLCPCB Standard PCB Capabilities — Copper Weight"
+    notes: "Commonly cited as outer [1, 2] oz, inner [0.5, 1, 2] oz. Verify on official page."
+
+  layer_counts:
+    values: []
+    verified: false
+    citation: "TODO: JLCPCB Standard PCB Capabilities — Layer Count"
+    notes: "Commonly cited as 1–20 layers. Verify on official page."
+
+  # Surface finish
+  surface_finishes:
+    values: []
+    verified: false
+    citation: "TODO: JLCPCB Standard PCB Capabilities — Surface Finish"
+    notes: "Commonly cited as [HASL, HASL_LF, ENIG]. Verify on official page."
+
+  # Edge clearance
+  min_copper_to_edge_mm:
+    value: null
+    verified: false
+    citation: "TODO: JLCPCB Standard PCB Capabilities — Copper to Board Edge"
+    notes: "Commonly cited as 0.3mm. Verify on official page."

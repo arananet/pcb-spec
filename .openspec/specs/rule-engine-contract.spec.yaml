@@ -20,7 +20,7 @@ description: |
   standards-rule-library). This spec is pure contract: types, resolution
   order, and the evaluation loop stub.
 
-status: review
+status: approved
 
 owner: arananet
 team: pcb-spec
