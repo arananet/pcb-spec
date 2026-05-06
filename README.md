@@ -41,10 +41,10 @@ A PCB project is two artifacts pretending to be one.
 | **Manifest schema** | Canonical YAML schema (stackup, rules, net classes, placement, gates) | implemented |
 | **Rule engine contract** | Rule/Violation/FactBase types, four-source resolution order, evaluation model | implemented |
 | **Standards rule library** | IPC-2152, IPC-2221, common fab DFM minimums as bundled data | implemented (JLCPCB values need manual verification) |
-| **Schema validator** | `pcb-spec validate` — schema + internal consistency checks | planned |
-| **Conformance checker** | Walks netlist + manifest, runs schematic-phase gates | planned |
-| **EDA rule translator** | Emits native syntax (KiCad `.kicad_dru` first) | planned |
-| **Calculator tools** | Wadell impedance, IPC-2152 current capacity, via thermal | planned |
+| **Schema validator** | `pcb-spec validate` — schema + internal consistency checks | implemented |
+| **Conformance checker** | Walks netlist + manifest, runs schematic-phase gates | implemented |
+| **EDA rule translator** | Emits native syntax (KiCad `.kicad_dru` first) | implemented |
+| **Calculator tools** | Wadell impedance, IPC-2221B current capacity | implemented |
 | **Claude Skill** | `.claude/skills/pcb-spec/` — teaches Claude to operate the toolchain; replaces llm-* specs | planned |
 | **Reference projects** | Real boards from the author's bench, used as test fixtures | planned |
 
@@ -80,7 +80,7 @@ pip install -e ".[dev]"
 bash setup.sh          # install OpenSpec git hooks
 
 # validate one of the example manifests
-python3 -m pcb_spec.schema examples/minimal-2layer/manifest.yaml
+python3 -m pcb_spec validate examples/minimal-2layer/manifest.yaml
 
 # run the test suite
 python3 -m pytest
@@ -131,7 +131,7 @@ docs/
 
 ## Status
 
-Experimental. `manifest-schema`, `rule-engine-contract`, `standards-rule-library`, and `bom-library-format` are implemented (62 tests, all passing). `pcb-spec-skill` is drafted. Everything else is planned — see [`docs/specs-roadmap.md`](docs/specs-roadmap.md) for the build order and dependencies. Architecture: CLI + Claude Skill, no MCP.
+Experimental. `manifest-schema`, `rule-engine-contract`, `standards-rule-library`, `bom-library-format`, `schema-validator`, `impedance-calculator`, `current-capacity-calculator`, `kicad-netlist-parser`, `conformance-checker`, and `kicad-rule-emitter` are implemented (134 tests, all passing). `pcb-spec-skill` is drafted. Everything else is planned — see [`docs/specs-roadmap.md`](docs/specs-roadmap.md) for the build order and dependencies. Architecture: CLI + Claude Skill, no MCP.
 
 ### Reference sources
 

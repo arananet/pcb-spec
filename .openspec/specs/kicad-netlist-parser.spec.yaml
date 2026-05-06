@@ -1,0 +1,49 @@
+title: "KiCad Netlist Parser v0.1"
+description: |
+  Implement `src/pcb_spec/conformance/netlist_parser.py` — parse a KiCad
+  S-expression netlist file (.net) into typed Python dataclasses.
+
+  KiCad exports netlists from Eeschema via File → Export → Netlist.
+  The default format is a Lisp-like S-expression (sexp) file. This module
+  reads that file and returns a `Netlist` object that the conformance checker
+  can query without caring about the raw sexp syntax.
+
+  The parser must use only the Python standard library (no third-party sexp
+  or lxml libraries). A minimal recursive-descent tokenizer + parser is
+  sufficient for the well-defined KiCad netlist schema.
+
+status: review
+owner: arananet
+team: pcb-spec
+implementation_skill: null
+
+acceptance_criteria:
+  - "`src/pcb_spec/conformance/netlist_parser.py` exports `parse_kicad_netlist(path) -> Netlist`. `Netlist` is a dataclass with `components: list[Component]` and `nets: list[Net]`."
+  - "`Component` is a dataclass with fields `ref: str`, `value: str`, `footprint: str`."
+  - "`Net` is a dataclass with fields `code: str`, `name: str`, `nodes: list[NetNode]`. `NetNode` has `ref: str` and `pin: str`."
+  - "`Netlist` exposes helper properties `component_refs() -> set[str]` and `net_names() -> set[str]` for O(1) membership tests."
+  - "The parser raises `FileNotFoundError` for a missing file and `ValueError` with a descriptive message for a file that is not a valid KiCad netlist."
+  - "`src/pcb_spec/conformance/__init__.py` exists so `conformance` is a proper package."
+
+test_plan:
+  unit_tests:
+    - "parse_kicad_netlist returns a Netlist for the minimal fixture (tests/fixtures/netlists/minimal.net)."
+    - "Netlist.component_refs() returns the expected set of reference designators."
+    - "Netlist.net_names() returns the expected set of net names."
+    - "Each Net has the correct list of NetNodes."
+    - "parse_kicad_netlist raises FileNotFoundError for a non-existent path."
+    - "parse_kicad_netlist raises ValueError for a file that is not a KiCad netlist (e.g., plain text)."
+
+  out_of_scope_for_this_spec:
+    - "KiCad XML netlist format (only sexp .net format in v0.1)"
+    - "KiCad PCB file parsing (that is a separate spec)"
+    - "Hierarchical sheet handling"
+
+dependencies:
+  - manifest-schema
+
+deliverables:
+  - "src/pcb_spec/conformance/__init__.py"
+  - "src/pcb_spec/conformance/netlist_parser.py"
+  - "tests/fixtures/netlists/minimal.net"
+  - "tests/test_netlist_parser.py"

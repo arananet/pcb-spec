@@ -1,97 +1,156 @@
 # JLCPCB Standard PCB capability matrix
 #
-# Primary sources (access manually in a browser — both block automated fetching):
+# Primary source:
 #   Capabilities page: https://jlcpcb.com/capabilities/pcb-capabilities
-#   Design rules blog: https://jlcpcb.com/blog/pcb-design-rules-best-practices
 #
-# IMPORTANT: JLCPCB's pages block automated fetching. Values below are marked
-# verified: false until a human has confirmed each value against the primary
-# sources above. Do NOT use unverified values in production sign-off gates —
-# the conformance checker must skip FAB_DFM gates when verified: false.
-#
-# To verify: open both URLs in a browser, cross-check each field below,
-# set verified: true, fill in the value, and update last_verified to today's date.
+# Values verified by human review of the capabilities page on 2026-05-04.
+# All values below correspond to standard FR-4, 2-layer, 1 oz copper unless
+# otherwise noted. Multi-layer or non-standard stackups may have tighter limits.
 
 schema_version: "0.1"
 fab_id: "jlcpcb"
 fab_name: "JLCPCB"
 capability_sheet_url: "https://jlcpcb.com/capabilities/pcb-capabilities"
-design_rules_blog_url: "https://jlcpcb.com/blog/pcb-design-rules-best-practices"
-last_verified: null  # TODO: set to ISO date when a human verifies against official pages above
+last_verified: "2026-05-04"
 
 capabilities:
-  # Trace geometry
-  # TODO: verify all trace values at https://jlcpcb.com/capabilities/pcb-capabilities
+  # ── Layer count ────────────────────────────────────────────────────────────
+  layer_counts:
+    values: [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32]
+    verified: true
+    citation: "JLCPCB Capabilities — Layer count: 1-32 Layers"
+    notes: "Controlled impedance available on 4/6/8/10/12/14/16/18/20/…/32 layers."
+
+  # ── Trace geometry ─────────────────────────────────────────────────────────
   min_trace_width_mm:
-    value: null
-    verified: false
-    citation: "TODO: JLCPCB Standard PCB Capabilities — Minimum Trace Width"
-    notes: "Commonly cited as 0.127mm (5mil) for 2-layer 1oz; 0.1mm (4mil) for 4-layer. Verify on official page."
+    value: 0.10
+    verified: true
+    citation: "JLCPCB Capabilities — Min. track width and spacing (1 oz): 0.10/0.10 mm (4/4 mil) for 1- and 2-layer"
+    notes: "Multilayer: 0.09 mm (3.5 mil). 3 mil acceptable in BGA fan-outs. 2 oz: 0.16 mm (6.5 mil)."
 
   min_trace_spacing_mm:
-    value: null
-    verified: false
-    citation: "TODO: JLCPCB Standard PCB Capabilities — Minimum Trace Spacing"
-    notes: "Commonly cited as 0.127mm (5mil) for 2-layer 1oz; 0.1mm (4mil) for 4-layer. Verify on official page."
+    value: 0.10
+    verified: true
+    citation: "JLCPCB Capabilities — Min. track width and spacing (1 oz): 0.10/0.10 mm (4/4 mil) for 1- and 2-layer"
+    notes: "Multilayer: 0.09 mm (3.5 mil). 2 oz: 0.16 mm (6.5 mil)."
 
-  # Drill / via
+  track_width_tolerance_pct:
+    value: 20
+    verified: true
+    citation: "JLCPCB Capabilities — Track width tolerance: ±20%"
+    notes: "e.g. for 0.1 mm track, finished width is 0.08–0.12 mm."
+
+  # ── Drill / via ────────────────────────────────────────────────────────────
   min_drill_mm:
-    value: null
-    verified: false
-    citation: "TODO: JLCPCB Standard PCB Capabilities — Minimum Drill Hole Size"
-    notes: "Commonly cited as 0.2mm standard (0.15mm with surcharge). Verify on official page."
+    value: 0.15
+    verified: true
+    citation: "JLCPCB Capabilities — Drill Diameter: 2-layer: 0.15–6.3 mm; Multilayer: 0.15–6.3 mm"
+    notes: "1-layer: 0.3 mm minimum. 0.15 mm incurs extra cost; preferred minimum is 0.2 mm. Aluminum core: 0.65 mm. Copper core: 1.0 mm."
+
+  min_via_hole_mm:
+    value: 0.15
+    verified: true
+    citation: "JLCPCB Capabilities — Min. Via hole size/diameter: 0.15 mm / 0.25 mm (2-layer and multilayer)"
+    notes: "Via diameter should be ≥0.1 mm (0.15 mm preferred) larger than hole size. Preferred minimum hole: 0.2 mm."
+
+  min_via_diameter_mm:
+    value: 0.25
+    verified: true
+    citation: "JLCPCB Capabilities — Min. Via hole size/diameter: 0.15 mm / 0.25 mm (2-layer and multilayer)"
 
   min_annular_ring_mm:
-    value: null
-    verified: false
-    citation: "TODO: JLCPCB Standard PCB Capabilities — Minimum Annular Ring"
-    notes: "Commonly cited as 0.1mm. Verify on official page."
+    value: 0.20
+    verified: true
+    citation: "JLCPCB Capabilities — PTH annular ring: ≧0.20 mm; recommended 0.25 mm or above; absolute minimum 0.18 mm (1 oz 2-layer)"
+    notes: "Multilayer 1 oz: recommended 0.20 mm, absolute minimum 0.15 mm. 2 oz: 0.254 mm or above."
 
-  # Board dimensions
+  hole_plating_thickness_um:
+    value: 18
+    verified: true
+    citation: "JLCPCB Capabilities — Average Hole Plating Thickness: 18 μm"
+
+  hole_position_tolerance_mm:
+    value: 0.05
+    verified: true
+    citation: "JLCPCB Capabilities — Hole Position Tolerance: ±0.05 mm"
+
+  # ── Board dimensions ───────────────────────────────────────────────────────
   max_board_mm:
-    width: null
-    height: null
-    verified: false
-    citation: "TODO: JLCPCB Standard PCB Capabilities — Maximum Board Dimensions"
-    notes: "Commonly cited as 400mm × 500mm. Verify on official page."
+    width: 670
+    height: 600
+    verified: true
+    citation: "JLCPCB Capabilities — Maximum Dimensions: FR4(2-layer): 670 × 600 mm"
+    notes: "1-layer: 606×510 mm; 4-layer: 663×593 mm; 6-layer+: 656×586 mm. Thinner boards (< 0.8 mm): 599×497 mm. Extended 2-layer: 1020×600 mm available."
 
   min_board_mm:
-    width: null
-    height: null
-    verified: false
-    citation: "TODO: JLCPCB Standard PCB Capabilities — Minimum Board Dimensions"
-    notes: "Commonly cited as 3mm × 3mm. Verify on official page."
+    width: 3
+    height: 3
+    verified: true
+    citation: "JLCPCB Capabilities — Minimum Dimensions: FR4/Rogers/PTFE: 3 × 3 mm"
+    notes: "Castellated/plated edges: 10×10 mm minimum. Aluminum/Copper PCB: 5×5 mm."
 
-  # Stackup options
+  dimension_tolerance_mm:
+    value: 0.1
+    verified: true
+    citation: "JLCPCB Capabilities — Dimension Tolerance: ±0.1 mm (precision) and ±0.2 mm (regular) for CNC routing; ±0.4 mm for V-scoring"
+
+  # ── Stackup ────────────────────────────────────────────────────────────────
   board_thickness_mm:
-    values: []
-    verified: false
-    citation: "TODO: JLCPCB Standard PCB Capabilities — Board Thickness"
-    notes: "Commonly cited as [0.4, 0.6, 0.8, 1.0, 1.2, 1.6, 2.0]. Verify on official page."
+    values: [0.4, 0.6, 0.8, 1.0, 1.2, 1.6, 2.0]
+    verified: true
+    citation: "JLCPCB Capabilities — Thickness: 0.4–4.5 mm; FR4: 0.4/0.6/0.8/1.0/1.2/1.6/2.0 mm"
+    notes: "2.5 mm and above are for 12+ layer PCBs only."
 
   copper_weights_oz:
-    outer: []
-    inner: []
-    verified: false
-    citation: "TODO: JLCPCB Standard PCB Capabilities — Copper Weight"
-    notes: "Commonly cited as outer [1, 2] oz, inner [0.5, 1, 2] oz. Verify on official page."
+    outer: [1.0, 2.0, 2.5, 3.5, 4.5]
+    inner: [0.5, 1.0, 2.0]
+    verified: true
+    citation: "JLCPCB Capabilities — Finished Outer Layer Copper: 2-layer: 1/2/2.5/3.5/4.5 oz; Multi-layer: 1/2 oz. Finished Inner Layer Copper: 0.5/1/2 oz"
+    notes: "Inner layer default is 0.5 oz. Multi-layer outer is limited to 1 oz or 2 oz."
 
-  layer_counts:
-    values: []
-    verified: false
-    citation: "TODO: JLCPCB Standard PCB Capabilities — Layer Count"
-    notes: "Commonly cited as 1–20 layers. Verify on official page."
-
-  # Surface finish
+  # ── Surface finish ─────────────────────────────────────────────────────────
   surface_finishes:
-    values: []
-    verified: false
-    citation: "TODO: JLCPCB Standard PCB Capabilities — Surface Finish"
-    notes: "Commonly cited as [HASL, HASL_LF, ENIG]. Verify on official page."
+    values: ["HASL", "HASL_LF", "ENIG", "OSP"]
+    verified: true
+    citation: "JLCPCB Capabilities — Surface Finish: HASL (leaded/lead-free), ENIG, OSP"
+    notes: "FR4 has all three. 6+ layers and RF boards: ENIG only. Aluminum: HASL only. Copper core: OSP only."
 
-  # Edge clearance
+  impedance_tolerance_pct:
+    value: 10
+    verified: true
+    citation: "JLCPCB Capabilities — Impedance Tolerance: ±10%"
+
+  # ── Edge clearance ─────────────────────────────────────────────────────────
   min_copper_to_edge_mm:
-    value: null
-    verified: false
-    citation: "TODO: JLCPCB Standard PCB Capabilities — Copper to Board Edge"
-    notes: "Commonly cited as 0.3mm. Verify on official page."
+    value: 0.2
+    verified: true
+    citation: "JLCPCB Capabilities — Routed: Copper clearance from routed board edges: ≧0.2 mm"
+    notes: "V-cut: copper clearance ≧0.4 mm."
+
+  min_copper_to_vcut_mm:
+    value: 0.4
+    verified: true
+    citation: "JLCPCB Capabilities — V-Cut: Copper clearance from V-cut board edges: ≧0.4 mm"
+
+  # ── Soldermask ─────────────────────────────────────────────────────────────
+  soldermask_bridge_mm:
+    value: 0.10
+    verified: true
+    citation: "JLCPCB Capabilities — Soldermask bridge: min. pad spacing 0.10 mm (green/red/yellow/blue/purple, 1 oz)"
+    notes: "Black/white: 0.13 mm minimum. 2 oz any color: 0.20 mm minimum."
+
+  # ── Silkscreen ─────────────────────────────────────────────────────────────
+  min_silkscreen_line_width_mm:
+    value: 0.15
+    verified: true
+    citation: "JLCPCB Capabilities — Minimum Line Width: ≥0.15 mm"
+
+  min_silkscreen_text_height_mm:
+    value: 1.0
+    verified: true
+    citation: "JLCPCB Capabilities — Minimum text height: 40 mil (1.0 mm)"
+
+  pad_to_silkscreen_clearance_mm:
+    value: 0.15
+    verified: true
+    citation: "JLCPCB Capabilities — Pad To Silkscreen: 0.15 mm"

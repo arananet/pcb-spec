@@ -1,0 +1,75 @@
+title: "Impedance Calculator v0.1"
+description: |
+  Implement `src/pcb_spec/calc/impedance.py` — a pure-Python calculator for
+  characteristic impedance of PCB transmission lines. Covers the two most common
+  geometries: microstrip (outer layer trace over a reference plane) and stripline
+  (inner layer trace between two reference planes).
+
+  Formulas are from IPC-2141A and Wadell (1991). Both are closed-form
+  approximations suitable for standard FR-4 PCBs; controlled-impedance
+  calculations at JLCPCB use the same family of equations.
+
+  The calculator is used by:
+    - The CLI: `pcb-spec calc impedance ...`
+    - The conformance checker (future spec) to verify impedance_profile targets
+    - The Claude Skill for manifest authoring guidance
+
+  All inputs and outputs use SI units (mm for dimensions, ohms for impedance).
+  The calculator must not import any external scientific libraries (no numpy,
+  scipy); standard math module only.
+
+status: review
+
+owner: arananet
+team: pcb-spec
+implementation_skill: null
+
+acceptance_criteria:
+  - "`src/pcb_spec/calc/impedance.py` exports `microstrip_impedance(w, h, t, er) -> float` and `stripline_impedance(w, b, t, er) -> float`. All args are floats in mm; return value is impedance in ohms."
+  - "`microstrip_impedance` implements the IPC-2141A / Wadell closed-form approximation: Z0 = (87 / sqrt(er + 1.41)) * ln(5.98*h / (0.8*w + t)). Result must be within ±1 ohm of the reference values in the test plan."
+  - "`stripline_impedance` implements the Wadell formula: Z0 = (60 / sqrt(er)) * ln(4*b / (0.67*pi*(0.8*w + t))). Result must be within ±1 ohm of the reference values in the test plan."
+  - "Both functions raise `ValueError` with a descriptive message if any argument is ≤ 0. Wide traces (w > h for microstrip) are physically valid and the formula handles them without error."
+  - "The CLI subcommand `pcb-spec calc impedance` accepts `--geometry microstrip|stripline`, `--width <mm>`, `--height <mm>`, `--thickness <mm>`, `--er <float>` and prints the result as `Z0 = <value> ohm` to stdout."
+  - "`src/pcb_spec/calc/__init__.py` exists (may be empty) so `calc` is a proper package."
+
+test_plan:
+  unit_tests:
+    - "microstrip_impedance(w=0.2, h=0.2, t=0.035, er=4.5) is within ±1 ohm of 50 ohm (standard USB trace geometry on FR-4)."
+    - "microstrip_impedance(w=0.1, h=0.1, t=0.035, er=4.5) returns a value in the plausible range 40–65 ohm."
+    - "stripline_impedance(w=0.15, b=0.36, t=0.035, er=4.5) is within ±1 ohm of 50 ohm."
+    - "microstrip_impedance raises ValueError when w <= 0."
+    - "microstrip_impedance raises ValueError when h <= 0."
+    - "stripline_impedance raises ValueError when b <= 0."
+    - "Both functions return float, not int."
+
+  integration_tests:
+    - "CLI `pcb-spec calc impedance --geometry microstrip --width 0.2 --height 0.2 --thickness 0.035 --er 4.5` exits 0 and stdout contains 'Z0 ='."
+    - "CLI with missing required argument exits non-zero."
+
+  out_of_scope_for_this_spec:
+    - "Differential impedance (future extension)"
+    - "Coplanar waveguide geometries"
+    - "Frequency-dependent dielectric models"
+    - "Integration with conformance checker (that is in conformance-checker spec)"
+    - "Impedance profile validation against manifest targets"
+
+dependencies:
+  - manifest-schema
+
+deliverables:
+  - "src/pcb_spec/calc/__init__.py"
+  - "src/pcb_spec/calc/impedance.py"
+  - "tests/test_impedance.py"
+
+notes: |
+  Reference values for tests (from JLCPCB impedance calculator and Wadell 1991):
+    Microstrip 50 ohm on FR-4 (er=4.5): w≈0.2 mm for h=0.2 mm, t=0.035 mm (1 oz)
+    Stripline 50 ohm on FR-4 (er=4.5): w≈0.15 mm for b=0.36 mm, t=0.035 mm
+
+  The Wadell microstrip formula used here is the simplified IPC-2141A form,
+  valid for w/h < 1 (narrow traces). For w/h > 1 a different form applies but
+  50-ohm controlled impedance traces are almost always narrow, so this range
+  is sufficient for v0.1.
+
+  The CLI subcommand is added to the existing argparse tree in src/pcb_spec/cli.py
+  under a new `calc` subparser. Keep cli.py thin — no formula logic there.
